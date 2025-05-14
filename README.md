@@ -6,6 +6,7 @@ conda create -n nerfstudio_env -c conda-forge python=3.10
 conda activate nerfstudio_env
 pip install nerfstudio
 conda install -c conda-forge colmap
+conda install -c conda-forge ffmpeg
 ```
 ### install Splatfacto
 ```bash 
@@ -21,10 +22,16 @@ pip install pillow-heif
 ```bash 
 export MAX_JOBS=1
 ```
+
+### GILLE
 ```bash
 export TORCH_CUDA_ARCH_LIST="8.9"
 ```
-(depend of the gpu)
+
+### PABLO
+```bash
+export TORCH_CUDA_ARCH_LIST="8.0"
+```
 
 ### Custom scene
 ```bash
