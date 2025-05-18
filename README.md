@@ -18,6 +18,10 @@ pip install git+https://github.com/nerfstudio-project/gsplat.git@v1.4.0
 pip install pillow-heif
 ```
 
+### Folder organisation
+
+in the data/nerf_synthetic/chair folder put the result of colmap
+
 ### Change some config
 ```bash 
 export MAX_JOBS=1
