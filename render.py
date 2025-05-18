@@ -106,7 +106,7 @@ def load_camera_params(scene_type, device, use_half):
     for frame in tr_dict["frames"]:
         c2w = frame["transform_matrix"]
         c2ws.append(c2w)
-        img = imageio.imread(data_root / (frame["file_path"] + ".png"))
+        img = imageio.imread(data_root / (frame["file_path"]))
         imgs.append(img)
     c2ws = np.array(c2ws)
     img_height, img_width = imgs[0].shape[:2]

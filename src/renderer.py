@@ -23,7 +23,7 @@ class GSRasterizer(object):
 
         self.sh_degree = 3
         self.white_bkgd = True
-        self.tile_size = 25
+        self.tile_size = 36
 
     def render_scene(self, scene: Scene, camera: Camera):
 
@@ -40,7 +40,7 @@ class GSRasterizer(object):
         # assuming that these transforms are applied to points in row vector format.
         # NOTE: Do NOT modify this block.
         # Retrieve camera pose (extrinsic)
-        mean_3d,scales,rotations,shs,opacities = mirror(mean_3d,scales,rotations,shs,opacities)
+        #mean_3d,scales,rotations,shs,opacities = mirror(mean_3d,scales,rotations,shs,opacities)
 
         R = camera.camera_to_world[:3, :3]  # 3 x 3
         T = camera.camera_to_world[:3, 3:4]  # 3 x 1
@@ -231,8 +231,12 @@ class GSRasterizer(object):
 
         assert camera.image_height % self.tile_size == 0, "Image height must be divisible by the tile_size."
         assert camera.image_width % self.tile_size == 0, "Image width must be divisible by the tile_size."
-        for h in range(0, camera.image_height, self.tile_size):
-            for w in range(0, camera.image_width, self.tile_size):
+
+        
+        #!!!!!! ATTENTION !!!!! Something weird the h and w -> need fix
+
+        for h in range(0, camera.image_width, self.tile_size):
+            for w in range(0, camera.image_height, self.tile_size):
                 # check if the rectangle penetrate the tile
                 over_tl = rect[0][..., 0].clip(min=w), rect[0][..., 1].clip(min=h)
                 over_br = rect[1][..., 0].clip(max=w+self.tile_size-1), rect[1][..., 1].clip(max=h+self.tile_size-1)
