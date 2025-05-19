@@ -20,7 +20,6 @@ pip install pillow-heif
 
 ### Folder organisation
 ```bash 
-in the data/nerf_synthetic/chair folder put the result of colmap
 in data put the splath form training and renamed it chair
 ```
 
