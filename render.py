@@ -102,14 +102,17 @@ def load_camera_params(scene_type, device, use_half):
     tr_dict = json.load(open(tr_path, "r"))
 
     c2ws = []
-    imgs = []
+    #imgs = []
     for frame in tr_dict["frames"]:
         c2w = frame["transform_matrix"]
         c2ws.append(c2w)
-        img = imageio.imread(data_root / (frame["file_path"]))
-        imgs.append(img)
+        #img = imageio.imread(data_root / (frame["file_path"]))
+        #imgs.append(img)
     c2ws = np.array(c2ws)
-    img_height, img_width = imgs[0].shape[:2]
+    img_height = torch.tensor(tr_dict['h']).to(device)
+    img_width = torch.tensor(tr_dict['w']).to(device)
+    print(img_height)
+    print(img_width)
     fov = torch.tensor(tr_dict['camera_angle_x']).to(device)
     focal = convert_fov_to_focal(fov, img_width)
     if use_half:
