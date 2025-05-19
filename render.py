@@ -80,7 +80,7 @@ def main(args: Args):
 
         # Render
         img = renderer.render_scene(scene, cam)
-        img = img.reshape(img_height, img_width, 3)
+        img = img.reshape(img_width,img_height, 3)
         img = torch.clamp(img, 0.0, 1.0)
 
         # Record images for video

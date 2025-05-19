@@ -234,7 +234,9 @@ class GSRasterizer(object):
 
         
         #!!!!!! ATTENTION !!!!! Something weird the h and w -> need fix
-
+        print(render_color.shape)
+        print("width : ",camera.image_width)
+        print("height : ",camera.image_height)
         for h in range(0, camera.image_width, self.tile_size):
             for w in range(0, camera.image_height, self.tile_size):
                 # check if the rectangle penetrate the tile
@@ -289,9 +291,14 @@ class GSRasterizer(object):
                 residual_transparency = accumulated_transparency[-1].squeeze(-1).squeeze(-1)
                 background_opacity = residual_transparency[..., None].expand(-1, -1, 3)
                 tile_color += background_opacity
+                #print("h = ",h + self.tile_size)
+                #print("w = ",w + self.tile_size)
+                i1,i2=h,h + self.tile_size
+                j1,j2=w,w + self.tile_size
                 render_color[
-                    h:h + self.tile_size,
-                    w:w + self.tile_size
+                    i1:i2,
+                    j1:j2
+                    
                 ] = tile_color.reshape(self.tile_size, self.tile_size, -1)
 
         return render_color
