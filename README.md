@@ -1,8 +1,44 @@
-# README
+<div align=center>
+  <h1>
+    Mirror Rendering of Gaussian Splat
+  </h1>
+  <p>
+    <a href=https://mhsung.github.io/kaist-cs479-spring-2025/ target="_blank"><b>KAIST CS479: Machine Learning for 3D Data</b></a><br>
+    Group Project
+  </p>
+</div>
 
----
+## Code Structure
+This codebase is organized as the following directory tree.
+```
+Rendering-Contest
+│
+├── camera_input_images
+├── camera_input_images_converted
+├── data
+├── export
+├── mirror_rendering_outputs
+├── outputs
+├── processed_images_colmap
+├── src
+│   ├── camera.py
+│   ├── constants.py
+│   ├── renderer.py
+│   ├── rgb_metrics.py
+│   ├── scene.py
+│   └── sh.py
+├── .gitignore
+├── convert.py
+├── evaluate.py
+├── metrics.csv
+├── render.py
+├── render_all.sh
+└── README.md
+```
 
 ## Preprocessing
+
+---
 ### 1. Environment Setup
 ```bash 
 conda create -n nerfstudio_env -c conda-forge python=3.10 -y
@@ -52,17 +88,22 @@ export TORCH_CUDA_ARCH_LIST="8.6"
 pip install pillow-heif
 python convert.py
 ```
+- The camera input pictures are gitignored: `camera_input_pic/`, `camera_input_pic_convert/`
+- Link to Download: https://drive.google.com/drive/folders/1uLroHJXeJLAx3mO67CzmIuwsV-WOKOWP?usp=sharing
 
 ### 5. Generate Camera Poses with COLMAP
 ```bash
 ns-process-data images --data ./camera_input_images_converted --output-dir ./processed_images_colmap
 ```
+- The COLMAP–processed images are gitignored: `processed_images_colmap/`
+- Link to Download: https://drive.google.com/drive/folders/15lzamNo2JjFHmjq44iJfDnQnInIL363u?usp=sharing
 
 ### 6. Train with Splatfacto
-- The output directory is in `outputs/`
 ```bash
 ns-train splatfacto --data ./processed_images_colmap
 ```
+- The Splatfacto trained model outputs are gitignored: `outputs/`
+- Link to Download: https://drive.google.com/drive/folders/1AniBSBACpUI5WL0LCbVa4b_IqVVTidcM?usp=sharing
 
 ### 7. Dump out the Gaussian Splat
 - Export ply file
@@ -75,40 +116,35 @@ ns-export gaussian-splat \
 ```bash
 mv export/splat/splat.ply export/splat/{rename}.ply
 ```
-
-### 8. Link to Download ply File
-- Put `{rename}.ply` under `data/` directory
-```bash
-https://drive.google.com/drive/folders/1U4meVGaYqIFF0W6BxDdylooCOpICI9cx?usp=sharing
-```
-
-### 9. Link to Download Preprocessed File
-- The camera input picture files are gitignored: `camera_input_pic/`, `camera_input_pic_convert/`
-- The preprocessed file is gitignored: `processed_images_colmap/`
-    - Put `sparse_pc.ply`, `transforms_train`, `transforms_test` under `data/nerf_synthetic/{rename}` directory
-```bash
-https://drive.google.com/drive/folders/15lzamNo2JjFHmjq44iJfDnQnInIL363u?usp=sharing
-```
-
----
+- The Gaussian Splat is gitignored: `export/splat/`
+- Link to Download: https://drive.google.com/drive/folders/1U4meVGaYqIFF0W6BxDdylooCOpICI9cx?usp=sharing
 
 ## Mirror Rendering
+
+---
 ### 1. Activate Conda Environment Same as CS479 Assignment 3
 ```bash
 conda deactivate nerfstudio_env
 conda activate cs479-gs
 ```
 
+#### cs479-gs Environment Setup (Optional)
+```bash
+conda create --name cs479-gs python=3.10
+conda activate cs479-gs
+pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 --index-url https://download.pytorch.org/whl/cu124
+pip install torchmetrics[image]
+pip install imageio[ffmpeg]
+pip install plyfile tyro==0.6.0 jaxtyping==0.2.36 typeguard==2.13.3
+pip install simple-knn/.
+```
+
 ### 2. Render the Scene
 ```bash
 python render.py
 ```
-
-### 3. Link to Download the Mirror Rendering Outputs File
 - The mirror rendering output file is gitignored: `mirror_rendering_outputs/`
-```bash
-https://drive.google.com/drive/folders/1ZRAbBIHspBpg4I_Ix_4AJKGpS3aoricH?usp=sharing
-```
+- Link to Download: https://drive.google.com/drive/folders/1ZRAbBIHspBpg4I_Ix_4AJKGpS3aoricH?usp=sharing
 
 ---
 
