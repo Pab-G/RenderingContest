@@ -1,5 +1,7 @@
 # README
 
+---
+
 ## Preprocessing
 ### 1. Environment Setup: Nerfstudio and COLMAP
 ```bash 
@@ -87,14 +89,8 @@ python render.py
 ---
 
 # TODO
-```bash
-1. Adapt the cut of the scene to the camera angle
-2. Make the mirror in the scene
-3. Find the camera path
-4. Make the inception effect
-5. Take new images (Mon.)
-```
-
-
-
-
+1. [x] Adapt the cut of the scene to the camera angle
+2. [x] Make the mirror in the scene
+3. [x] Find the camera path
+4. [x] Make the inception effect
+5. [x] Take new images (Mon.)
