@@ -43,7 +43,7 @@ Rendering-Contest
 conda create -n nerfstudio_env -c conda-forge python=3.10 -y
 conda activate nerfstudio_env
 pip install nerfstudio
-conda install -c conda-forge ffmpeg -y
+conda install -c conda-forge colmap ffmpeg -y
 conda install \
   pytorch==2.5.1 \
   torchvision==0.20.1 \
