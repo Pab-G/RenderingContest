@@ -43,14 +43,14 @@ Rendering-Contest
 conda create -n nerfstudio_env -c conda-forge python=3.10 -y
 conda activate nerfstudio_env
 pip install nerfstudio
-conda install -c conda-forge colmap
-conda install -c conda-forge ffmpeg
+conda install -c conda-forge ffmpeg -y
 conda install \
   pytorch==2.5.1 \
   torchvision==0.20.1 \
   torchaudio==2.5.1 \
   pytorch-cuda=11.8 \
-  -c pytorch -c nvidia
+  -c pytorch -c nvidia \
+  -y
 ```
 
 ### 2. Install GSplat Extension
@@ -108,8 +108,8 @@ ns-train splatfacto --data ./processed_images_colmap
 - Export ply file
 ```bash
 ns-export gaussian-splat \
---load-config outputs/processed_images_colmap/splatfacto/{timestamp}/config.yml \
---output-dir ./export/splat
+  --load-config outputs/processed_images_colmap/splatfacto/{timestamp}/config.yml \
+  --output-dir ./export/splat
 ```
 - Rename ply file
 ```bash
