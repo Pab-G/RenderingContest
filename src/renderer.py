@@ -40,7 +40,10 @@ class GSRasterizer(object):
         # assuming that these transforms are applied to points in row vector format.
         # NOTE: Do NOT modify this block.
         # Retrieve camera pose (extrinsic)
-        #mean_3d,scales,rotations,shs,opacities = mirror(mean_3d,scales,rotations,shs,opacities)
+
+        mean_3d,scales,rotations,shs,opacities = mirror(mean_3d,scales,rotations,shs,opacities)
+        #mean_3d,scales,rotations,shs,opacities = shift(mean_3d,scales,rotations,shs,opacities)
+        #mean_3d,scales,rotations,shs,opacities = mask(mean_3d,scales,rotations,shs,opacities)
 
         R = camera.camera_to_world[:3, :3]  # 3 x 3
         T = camera.camera_to_world[:3, 3:4]  # 3 x 1
@@ -233,10 +236,10 @@ class GSRasterizer(object):
         assert camera.image_width % self.tile_size == 0, "Image width must be divisible by the tile_size."
 
         
-        #!!!!!! ATTENTION !!!!! Something weird the h and w -> need fix
-        print(render_color.shape)
-        print("width : ",camera.image_width)
-        print("height : ",camera.image_height)
+        
+        #print(render_color.shape)
+        #print("width : ",camera.image_width)
+        #print("height : ",camera.image_height)
         for h in range(0, camera.image_width, self.tile_size):
             for w in range(0, camera.image_height, self.tile_size):
                 # check if the rectangle penetrate the tile
@@ -368,15 +371,58 @@ def get_rect(pix_coord, radii, width, height):
 
 @jaxtyped(typechecker=typechecked)
 @torch.no_grad()
-def mirror(mean_3d) :
+def reflect_points(points):
+    # this function creat a mirror in the plan y = ax + b
+    a = 0.0
+    b = -0.3
+    # Normal vector of the plane: n = (0.1, -1, 0), normalized
+    n = torch.tensor([a, -1.0, 0.0], device=points.device, dtype=points.dtype)
+    n = n / torch.norm(n)
+
+    # A point on the plane: (0, -0.3, 0)
+    p0 = torch.tensor([0.0, b, 0.0], device=points.device, dtype=points.dtype)
+
+    # Vector from p0 to each point
+    vec = points - p0
+
+    # Project vec onto normal, then reflect
+    dot = torch.sum(vec * n, dim=1, keepdim=True)  # (N, 1)
+    reflect = points - 2 * dot * n  # Apply reflection formula
+
+    return reflect
+
+@jaxtyped(typechecker=typechecked)
+@torch.no_grad()
+def mirror(mean_3d,scales,rotations,shs,opacities) :
+    mask = (mean_3d[:, 1] > -0.3)
+            
+    main = mean_3d[mask]    
+    double = mean_3d[mask]
+    scales = scales[mask]
+    rotations= rotations[mask]
+    shs = shs[mask]
+    opacities = opacities[mask]
+
+    mask2 = (main[:, 1] < 0.5)
+            
+    reflect = reflect_points(main)
+
+    merged = torch.cat([main[mask2], reflect], dim=0)
+    scales    = torch.cat([scales[mask2], scales], dim=0)
+    rotations = torch.cat([rotations[mask2], rotations], dim=0)
+    shs       = torch.cat([shs[mask2], shs], dim=0)
+    opacities = torch.cat([opacities[mask2], opacities], dim=0)
+
+    return merged,scales,rotations,shs,opacities
+
+
+
+@jaxtyped(typechecker=typechecked)
+@torch.no_grad()
+def shift(mean_3d,scales,rotations,shs,opacities) :
     main = mean_3d.clone()
     reflect = mean_3d.clone()
-
-    R_180_y = torch.diag(torch.tensor([-1.0, -1.0, 1.0], device=mean_3d.device, dtype=mean_3d.dtype))
-    reflect = torch.matmul(reflect, R_180_y)
-
-    main[:, 1] += 1
-    reflect[:, 1] -= 2
+    reflect[:, 1] += 0.2
 
     merged = torch.cat([main, reflect], dim=0)
 
@@ -385,3 +431,16 @@ def mirror(mean_3d) :
     shs       = torch.cat([shs, shs], dim=0)
     opacities = torch.cat([opacities, opacities], dim=0)
     return merged,scales,rotations,shs,opacities
+
+def mask(mean_3d, scales, rotations, shs, opacities):
+    double = mean_3d.clone()
+
+    mask = ((double[:, 0] < -0.4) | (double[:, 0] > 0.1) | (double[:, 1] > -0.2) | (double[:, 2] > 0)) & (double[:, 1] < 0.5)
+
+    return (
+        double[mask],
+        scales[mask],
+        rotations[mask],
+        shs[mask],
+        opacities[mask]
+    )
