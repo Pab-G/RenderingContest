@@ -3,8 +3,8 @@ from PIL import Image
 import os
 
 register_heif_opener()  
-input_dir = "/mnt/c/Users/etien/OneDrive/Documents/KAIST/168 pictures of me"
-output_dir = "./data/images"
+input_dir = "camera_input_pic"
+output_dir = "camera_input_pic_convert"
 os.makedirs(output_dir, exist_ok=True)
 
 heic_files = sorted([f for f in os.listdir(input_dir) if f.lower().endswith(".heic")])
