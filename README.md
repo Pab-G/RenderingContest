@@ -68,8 +68,10 @@ https://drive.google.com/drive/folders/1U4meVGaYqIFF0W6BxDdylooCOpICI9cx?usp=sha
 - The camera input pictures file is gitignored: `camera_input_pic`, `camera_input_pic_convert`
 - The preprocessed file is gitignored: `processed_images_colmap`
 ```bash
-https://drive.google.com/drive/folders/1U4meVGaYqIFF0W6BxDdylooCOpICI9cx?usp=sharing
+https://drive.google.com/drive/folders/15lzamNo2JjFHmjq44iJfDnQnInIL363u?usp=sharing
 ```
+
+---
 
 ## Mirror Rendering
 ### 1. Activate Conda Environment Same as CS479 Assignment 3
@@ -81,6 +83,8 @@ conda activate cs479-gs
 ```bash
 python render.py
 ```
+
+---
 
 # TODO
 ```bash
