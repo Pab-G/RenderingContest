@@ -31,7 +31,7 @@ class Args:
     device_type: Literal["cpu", "cuda"] = "cuda"
     """Device to use for rendering."""
 
-    out_root: Path = Path("./outputs")
+    out_root: Path = Path("./mirror_rendering_outputs")
     """Root directory for saving outputs."""
 
 def main(args: Args):

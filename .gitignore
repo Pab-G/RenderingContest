@@ -1,9 +1,12 @@
 .DS_Store
+__MACOSX/
 *.xml
-processed_images_colmap
-camera_input_pic
-camera_input_pic_convert
+processed_images_colmap/
+camera_input_pic/
+camera_input_pic_convert/
 src/__pycache__
 data/nubzuki.ply
 outputs/
+mirror_rendering_outputs/
+export/
 
