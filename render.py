@@ -26,7 +26,7 @@ from src.scene import Scene
 @dataclass
 class Args:
     
-    scene_type: Literal["chair", "drums", "ficus", "hotdog", "lego", "materials", "mic", "ship"] = "chair"
+    scene_type: Literal["nubzuki", "chair", "drums", "ficus", "hotdog", "lego", "materials", "mic", "ship"] = "nubzuki"
     """Type of scene to render."""
     device_type: Literal["cpu", "cuda"] = "cuda"
     """Device to use for rendering."""
