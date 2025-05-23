@@ -38,7 +38,6 @@ Rendering-Contest
 
 ## Preprocessing
 
----
 ### 1. Environment Setup
 ```bash 
 conda create -n nerfstudio_env -c conda-forge python=3.10 -y
@@ -121,7 +120,6 @@ mv export/splat/splat.ply export/splat/{rename}.ply
 
 ## Mirror Rendering
 
----
 ### 1. Activate Conda Environment Same as CS479 Assignment 3
 ```bash
 conda deactivate nerfstudio_env
