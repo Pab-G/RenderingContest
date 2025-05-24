@@ -397,44 +397,48 @@ def reflect_points(points):
 @jaxtyped(typechecker=typechecked)
 @torch.no_grad()
 def mirror(mean_3d, scales, rotations, shs, opacities):
-    plane_y = -0.3
+    mask = (mean_3d[:, 1] > -0.3)
 
-    # Original Reflection (already working correctly)
-    mask = mean_3d[:, 1] > plane_y
-    main_points = mean_3d[mask]
-    reflected_points = reflect_points(main_points)
-
+    main = mean_3d[mask]
     scales_main = scales[mask]
     rotations_main = rotations[mask]
-    shs_main = shs[mask] * 0.8  # Slight dimming for realism
-    opacities_main = opacities[mask] * 0.8
+    shs_main = shs[mask]
+    opacities_main = opacities[mask]
 
-    # Physical mirror plane: very thin and visually subtle
-    mirror_size = 1.0  # Adjust mirror size
-    num_points_side = 100
+    mask2 = (main[:, 1] < 0.5)
+
+    reflect = reflect_points(main)
+
+    merged = torch.cat([main[mask2], reflect], dim=0)
+    scales = torch.cat([scales_main[mask2], scales_main], dim=0)
+    rotations = torch.cat([rotations_main[mask2], rotations_main], dim=0)
+    shs = torch.cat([shs_main[mask2], shs_main], dim=0)
+    opacities = torch.cat([opacities_main[mask2], opacities_main], dim=0)
+
+    # ---- Added Physical Mirror Surface ----
+    mirror_size = 1.0  # Adjust the size as needed
+    num_points_side = 150
     lin = torch.linspace(-mirror_size, mirror_size, num_points_side).to(mean_3d.device)
     grid_x, grid_z = torch.meshgrid(lin, lin, indexing='ij')
     mirror_points = torch.stack([
         grid_x.reshape(-1),
-        torch.full((num_points_side ** 2,), plane_y, device=mean_3d.device),
+        torch.full((num_points_side**2,), -0.3, device=mean_3d.device),
         grid_z.reshape(-1)
     ], dim=1)
 
-    # Mirror surface appearance: subtle, flat color close to neutral white
     mirror_shs = torch.zeros((mirror_points.shape[0], shs.shape[1], 3), device=mean_3d.device)
-    mirror_shs[:, 0, :] = 0.9  # neutral bright color
-    mirror_scales = torch.full((mirror_points.shape[0], 3), 0.003, device=mean_3d.device)  # very small scales
+    mirror_shs[:, 0, :] = 0.8  # soft neutral color
+    mirror_scales = torch.full((mirror_points.shape[0], 3), 0.002, device=mean_3d.device)
     mirror_rotations = torch.tensor([[1, 0, 0, 0]] * mirror_points.shape[0], device=mean_3d.device).float()
-    mirror_opacities = torch.full((mirror_points.shape[0], 1), 0.3, device=mean_3d.device)  # semi-transparent
+    mirror_opacities = torch.full((mirror_points.shape[0], 1), 0.25, device=mean_3d.device)  # semi-transparent
 
-    # Merge clearly
-    merged_points = torch.cat([mean_3d, reflected_points, mirror_points], dim=0)
-    merged_scales = torch.cat([scales, scales_main, mirror_scales], dim=0)
-    merged_rotations = torch.cat([rotations, rotations_main, mirror_rotations], dim=0)
-    merged_shs = torch.cat([shs, shs_main, mirror_shs], dim=0)
-    merged_opacities = torch.cat([opacities, opacities_main, mirror_opacities], dim=0)
+    merged = torch.cat([merged, mirror_points], dim=0)
+    scales = torch.cat([scales, mirror_scales], dim=0)
+    rotations = torch.cat([rotations, mirror_rotations], dim=0)
+    shs = torch.cat([shs, mirror_shs], dim=0)
+    opacities = torch.cat([opacities, mirror_opacities], dim=0)
 
-    return merged_points, merged_scales, merged_rotations, merged_shs, merged_opacities
+    return merged, scales, rotations, shs, opacities
 
 
 @jaxtyped(typechecker=typechecked)
