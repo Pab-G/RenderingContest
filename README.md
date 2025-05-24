@@ -137,6 +137,18 @@ pip install plyfile tyro==0.6.0 jaxtyping==0.2.36 typeguard==2.13.3
 pip install simple-knn/.
 ```
 
+#### PyTorch version might be incompatible with system CUDA version (Optional)
+- Check CUDA version installed and verify PyTorch CUDA Version compatibility
+```bash
+nvcc --version
+python -c "import torch; print(torch.__version__, torch.version.cuda)"
+```
+- Downgrade CUDA To 12.1
+```bash
+pip uninstall torch torchvision torchaudio -y
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+```
+
 ### 2. Render the Scene
 ```bash
 python render.py

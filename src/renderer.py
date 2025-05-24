@@ -417,7 +417,7 @@ def mirror(mean_3d, scales, rotations, shs, opacities):
 
     # ---- Added Physical Mirror Surface ----
     mirror_size = 1.0                                                                       # Adjust the mirror size
-    num_points_side = 100                                                                   # Adjust density: less dense grid for smoother surface
+    num_points_side = 1000                                                                  # Adjust density: less dense grid for smoother surface
     lin = torch.linspace(-mirror_size, mirror_size, num_points_side).to(mean_3d.device)
     grid_x, grid_z = torch.meshgrid(lin, lin, indexing='ij')
     mirror_points = torch.stack([
@@ -427,10 +427,10 @@ def mirror(mean_3d, scales, rotations, shs, opacities):
     ], dim=1)
 
     mirror_shs = torch.zeros((mirror_points.shape[0], shs.shape[1], 3), device=mean_3d.device)
-    mirror_shs[:, 0, :] = 0.8                                                               # Soft neutral color
-    mirror_scales = torch.full((mirror_points.shape[0], 3), 0.001, device=mean_3d.device)   # Adjusted Mirror Appearance (lower -> increase to smooth)
+    mirror_shs[:, 0, :] = 1.0                                                               # Soft neutral color
+    mirror_scales = torch.full((mirror_points.shape[0], 3), 0.03, device=mean_3d.device)   # Adjusted Mirror Appearance (lower -> increase to smooth)
     mirror_rotations = torch.tensor([[1, 0, 0, 0]] * mirror_points.shape[0], device=mean_3d.device).float()
-    mirror_opacities = torch.full((mirror_points.shape[0], 1), 0.15, device=mean_3d.device)  # Adjusted Mirror Appearance (lower -> increase to transparent)
+    mirror_opacities = torch.full((mirror_points.shape[0], 1), 1.0, device=mean_3d.device)  # Adjusted Mirror Appearance (lower -> increase to transparent)
 
     merged = torch.cat([merged, mirror_points], dim=0)
     scales = torch.cat([scales, mirror_scales], dim=0)
