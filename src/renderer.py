@@ -6,6 +6,7 @@ The implementation is based on torch-splatting: https://github.com/hbb1/torch-sp
 
 from jaxtyping import Bool, Float, jaxtyped
 import torch
+
 from typeguard import typechecked
 
 
@@ -392,57 +393,46 @@ def reflect_points(points):
 
     return reflect
 
+
 @jaxtyped(typechecker=typechecked)
 @torch.no_grad()
-def mirror(mean_3d, scales, rotations, shs, opacities) :
-    plane_y = -0.3                      # Mirror plane
-    reflection_intensity = 0.75         # Slightly dimmer reflection
-    blur_scale = 1.2                    # Slightly blurrier reflection
+def mirror(mean_3d, scales, rotations, shs, opacities):
+    plane_y = -0.3
 
-    # Only reflect points above the mirror plane
-    mask_above = mean_3d[:, 1] > plane_y + 1e-6
-    points_to_reflect = mean_3d[mask_above]
-    scales_to_reflect = scales[mask_above]
-    rotations_to_reflect = rotations[mask_above]
-    shs_to_reflect = shs[mask_above]
-    opacities_to_reflect = opacities[mask_above]
+    # Original Reflection (already working correctly)
+    mask = mean_3d[:, 1] > plane_y
+    main_points = mean_3d[mask]
+    reflected_points = reflect_points(main_points)
 
-    # Reflect points across mirror plane
-    reflected_points = points_to_reflect.clone()
-    reflected_points[:, 1] = 2 * plane_y - points_to_reflect[:, 1] - 1e-5  # Offset slightly below plane
+    scales_main = scales[mask]
+    rotations_main = rotations[mask]
+    shs_main = shs[mask] * 0.8  # Slight dimming for realism
+    opacities_main = opacities[mask] * 0.8
 
-    # Dim reflected colors (SH coefficients scaled down)
-    reflected_shs = shs_to_reflect.clone() * reflection_intensity
+    # Physical mirror plane: very thin and visually subtle
+    mirror_size = 1.0  # Adjust mirror size
+    num_points_side = 100
+    lin = torch.linspace(-mirror_size, mirror_size, num_points_side).to(mean_3d.device)
+    grid_x, grid_z = torch.meshgrid(lin, lin, indexing='ij')
+    mirror_points = torch.stack([
+        grid_x.reshape(-1),
+        torch.full((num_points_side ** 2,), plane_y, device=mean_3d.device),
+        grid_z.reshape(-1)
+    ], dim=1)
 
-    # Increase scale slightly for blurrier reflection
-    reflected_scales = scales_to_reflect.clone() * blur_scale
-
-    # Create physical mirror surface points (thin layer of Gaussians at plane)
-    mirror_width = 2.0  # adjust to scene width
-    mirror_depth = 2.0  # adjust to scene depth
-    num_mirror_points = 5000  # density of mirror surface
-
-    mirror_x = torch.linspace(-mirror_width, mirror_width, int(np.sqrt(num_mirror_points)))
-    mirror_z = torch.linspace(-mirror_depth, mirror_depth, int(np.sqrt(num_mirror_points)))
-    mirror_grid_x, mirror_grid_z = torch.meshgrid(mirror_x, mirror_z, indexing='ij')
-    mirror_y = torch.full_like(mirror_grid_x, plane_y)
-
-    mirror_points = torch.stack([mirror_grid_x, mirror_y, mirror_grid_z], dim=-1).reshape(-1, 3).to(mean_3d.device)
-
-    # Mirror color: near-white, semi-glossy
+    # Mirror surface appearance: subtle, flat color close to neutral white
     mirror_shs = torch.zeros((mirror_points.shape[0], shs.shape[1], 3), device=mean_3d.device)
-    mirror_shs[:, 0, :] = 0.9                                                                                   # Near-white diffuse color
-
-    mirror_scales = torch.full((mirror_points.shape[0], 3), 0.005, device=mean_3d.device)                       # Small Gaussians
+    mirror_shs[:, 0, :] = 0.9  # neutral bright color
+    mirror_scales = torch.full((mirror_points.shape[0], 3), 0.003, device=mean_3d.device)  # very small scales
     mirror_rotations = torch.tensor([[1, 0, 0, 0]] * mirror_points.shape[0], device=mean_3d.device).float()
-    mirror_opacities = torch.full((mirror_points.shape[0], 1), 0.9, device=mean_3d.device)
+    mirror_opacities = torch.full((mirror_points.shape[0], 1), 0.3, device=mean_3d.device)  # semi-transparent
 
-    # Merge original, reflection, and mirror plane points
+    # Merge clearly
     merged_points = torch.cat([mean_3d, reflected_points, mirror_points], dim=0)
-    merged_scales = torch.cat([scales, reflected_scales, mirror_scales], dim=0)
-    merged_rotations = torch.cat([rotations, rotations_to_reflect, mirror_rotations], dim=0)
-    merged_shs = torch.cat([shs, reflected_shs, mirror_shs], dim=0)
-    merged_opacities = torch.cat([opacities, opacities_to_reflect, mirror_opacities], dim=0)
+    merged_scales = torch.cat([scales, scales_main, mirror_scales], dim=0)
+    merged_rotations = torch.cat([rotations, rotations_main, mirror_rotations], dim=0)
+    merged_shs = torch.cat([shs, shs_main, mirror_shs], dim=0)
+    merged_opacities = torch.cat([opacities, opacities_main, mirror_opacities], dim=0)
 
     return merged_points, merged_scales, merged_rotations, merged_shs, merged_opacities
 
