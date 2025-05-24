@@ -41,9 +41,9 @@ class GSRasterizer(object):
         # NOTE: Do NOT modify this block.
         # Retrieve camera pose (extrinsic)
 
-        mean_3d,scales,rotations,shs,opacities = mirror(mean_3d,scales,rotations,shs,opacities)
-        #mean_3d,scales,rotations,shs,opacities = shift(mean_3d,scales,rotations,shs,opacities)
-        #mean_3d,scales,rotations,shs,opacities = mask(mean_3d,scales,rotations,shs,opacities)
+        mean_3d, scales, rotations, shs, opacities = mirror(mean_3d, scales, rotations, shs, opacities)
+        #mean_3d, scales, rotations, shs, opacities = shift(mean_3d, scales, rotations, shs, opacities)
+        #mean_3d, scales, rotations, shs, opacities = mask(mean_3d, scales, rotations, shs, opacities)
 
         R = camera.camera_to_world[:3, :3]  # 3 x 3
         T = camera.camera_to_world[:3, 3:4]  # 3 x 1
@@ -372,9 +372,10 @@ def get_rect(pix_coord, radii, width, height):
 @jaxtyped(typechecker=typechecked)
 @torch.no_grad()
 def reflect_points(points):
-    # this function creat a mirror in the plan y = ax + b
+    # Creat a mirror in the plan y = ax + b
     a = 0.0
     b = -0.3
+
     # Normal vector of the plane: n = (0.1, -1, 0), normalized
     n = torch.tensor([a, -1.0, 0.0], device=points.device, dtype=points.dtype)
     n = n / torch.norm(n)
@@ -386,35 +387,44 @@ def reflect_points(points):
     vec = points - p0
 
     # Project vec onto normal, then reflect
-    dot = torch.sum(vec * n, dim=1, keepdim=True)  # (N, 1)
-    reflect = points - 2 * dot * n  # Apply reflection formula
+    dot = torch.sum(vec * n, dim=1, keepdim=True)       # (N, 1)
+    reflect = points - 2 * dot * n                      # Apply reflection formula
 
     return reflect
 
 @jaxtyped(typechecker=typechecked)
 @torch.no_grad()
-def mirror(mean_3d,scales,rotations,shs,opacities) :
-    mask = (mean_3d[:, 1] > -0.3)
-            
-    main = mean_3d[mask]    
-    double = mean_3d[mask]
-    scales = scales[mask]
-    rotations= rotations[mask]
-    shs = shs[mask]
-    opacities = opacities[mask]
+def mirror(mean_3d, scales, rotations, shs, opacities) :
+    plane_y = -0.3                      # Mirror plane
+    reflection_intensity = 0.75         # Slightly dimmer reflection
+    blur_scale = 1.2                    # Slightly blurrier reflection
 
-    mask2 = (main[:, 1] < 0.5)
-            
-    reflect = reflect_points(main)
+    # Only reflect points above the mirror plane
+    mask_above = mean_3d[:, 1] > plane_y + 1e-6
+    points_to_reflect = mean_3d[mask_above]
+    scales_to_reflect = scales[mask_above]
+    rotations_to_reflect = rotations[mask_above]
+    shs_to_reflect = shs[mask_above]
+    opacities_to_reflect = opacities[mask_above]
 
-    merged = torch.cat([main[mask2], reflect], dim=0)
-    scales    = torch.cat([scales[mask2], scales], dim=0)
-    rotations = torch.cat([rotations[mask2], rotations], dim=0)
-    shs       = torch.cat([shs[mask2], shs], dim=0)
-    opacities = torch.cat([opacities[mask2], opacities], dim=0)
+    # Reflect points across mirror plane
+    reflected_points = points_to_reflect.clone()
+    reflected_points[:, 1] = 2 * plane_y - points_to_reflect[:, 1] - 1e-5  # Offset slightly below plane
 
-    return merged,scales,rotations,shs,opacities
+    # Dim reflected colors (SH coefficients scaled down)
+    reflected_shs = shs_to_reflect.clone() * reflection_intensity
 
+    # Increase scale slightly for blurrier reflection
+    reflected_scales = scales_to_reflect.clone() * blur_scale
+
+    # Combine original and reflected
+    merged_points = torch.cat([mean_3d, reflected_points], dim=0)
+    merged_scales = torch.cat([scales, reflected_scales], dim=0)
+    merged_rotations = torch.cat([rotations, rotations_to_reflect], dim=0)
+    merged_shs = torch.cat([shs, reflected_shs], dim=0)
+    merged_opacities = torch.cat([opacities, opacities_to_reflect], dim=0)
+
+    return merged_points, merged_scales, merged_rotations, merged_shs, merged_opacities
 
 
 @jaxtyped(typechecker=typechecked)
