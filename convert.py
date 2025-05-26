@@ -4,10 +4,10 @@ import os
 
 register_heif_opener()  
 input_dir = "camera_input_pic"
-output_dir = "camera_input_pic_convert"
+output_dir = "camera_input_pic_converted"
 os.makedirs(output_dir, exist_ok=True)
 
-heic_files = sorted([f for f in os.listdir(input_dir) if f.lower().endswith(".heic")])
+heic_files = sorted([f for f in os.listdir(input_dir) if f.lower().endswith(".heic") or f.lower().endswith("JPG")])
 
 for i, file in enumerate(heic_files):
     img = Image.open(os.path.join(input_dir, file))

@@ -3,7 +3,7 @@ __MACOSX/
 *.xml
 processed_images_colmap/
 camera_input_pic/
-camera_input_pic_convert/
+camera_input_pic_converted/
 src/__pycache__/
 data/nubzuki.ply
 outputs/

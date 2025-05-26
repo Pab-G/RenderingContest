@@ -92,7 +92,7 @@ python convert.py
 
 ### 5. Generate Camera Poses with COLMAP
 ```bash
-ns-process-data images --data ./camera_input_images_converted --output-dir ./processed_images_colmap
+ns-process-data images --data ./camera_input_pic_converted --output-dir ./processed_images_colmap
 ```
 - The COLMAP–processed images are gitignored: `processed_images_colmap/`
 - Link to Download: https://drive.google.com/drive/folders/15lzamNo2JjFHmjq44iJfDnQnInIL363u?usp=sharing
