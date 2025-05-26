@@ -43,7 +43,8 @@ Rendering-Contest
 conda create -n nerfstudio_env -c conda-forge python=3.10 -y
 conda activate nerfstudio_env
 pip install nerfstudio
-conda install -c conda-forge colmap ffmpeg -y
+conda install -c conda-forge colmap -y
+conda install -c conda-forge ffmpeg -y
 conda install \
   pytorch==2.5.1 \
   torchvision==0.20.1 \
@@ -87,7 +88,7 @@ export TORCH_CUDA_ARCH_LIST="8.6"
 pip install pillow-heif
 python convert.py
 ```
-- The camera input pictures are gitignored: `camera_input_pic/`, `camera_input_pic_convert/`
+- The camera input pictures are gitignored: `camera_input_pic/`, `camera_input_pic_converted/`
 - Link to Download: https://drive.google.com/drive/folders/1uLroHJXeJLAx3mO67CzmIuwsV-WOKOWP?usp=sharing
 
 ### 5. Generate Camera Poses with COLMAP
