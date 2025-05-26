@@ -41,9 +41,11 @@ class GSRasterizer(object):
         # NOTE: Do NOT modify this block.
         # Retrieve camera pose (extrinsic)
 
-        mean_3d,scales,rotations,shs,opacities = mirror(mean_3d,scales,rotations,shs,opacities)
+        #mean_3d,scales,rotations,shs,opacities = mirror(mean_3d,scales,rotations,shs,opacities)
         #mean_3d,scales,rotations,shs,opacities = shift(mean_3d,scales,rotations,shs,opacities)
         #mean_3d,scales,rotations,shs,opacities = mask(mean_3d,scales,rotations,shs,opacities)
+        #mean_3d,scales,rotations,shs,opacities = filter(camera.camera_to_world,mean_3d,scales,rotations,shs,opacities)
+        mean_3d,scales,rotations,shs,opacities = inception(mean_3d,scales,rotations,shs,opacities)
 
         R = camera.camera_to_world[:3, :3]  # 3 x 3
         T = camera.camera_to_world[:3, 3:4]  # 3 x 1
@@ -444,3 +446,88 @@ def mask(mean_3d, scales, rotations, shs, opacities):
         shs[mask],
         opacities[mask]
     )
+
+
+
+@jaxtyped(typechecker=typechecked)
+@torch.no_grad()
+def filter(w2c,mean_3d,scales,rotations,shs,opacities) :
+    T = w2c
+    n = torch.tensor([0.0, 0.0, 1.0, 0.0], device = w2c.device)  # direction vector (w=0)
+
+    # Point sur le plan : origine homogène
+    p = torch.tensor([0.0, 0.0, 0.0, 1.0], device = w2c.device)  # position vector (w=1)
+    T = T.to(w2c.device)
+
+    # Transformation de la normale
+    T_inv = torch.inverse(T)
+    T_inv_T = T_inv.T
+    n_transformed = T_inv_T @ n
+    n_transformed = n_transformed[:3]
+
+    # Transformation du point
+    p_transformed = T @ p
+    p_transformed = p_transformed[:3] / p_transformed[3]
+
+    normal_unit = n_transformed / torch.norm(n_transformed)
+    distance = -1.0
+    p_transformed = p_transformed + distance * normal_unit
+
+    vectors = mean_3d - p_transformed  # shape (N, 3)
+    dot_products = torch.matmul(vectors, n_transformed)  # shape (N,)
+
+    # Masques booléens
+    mask_front = dot_products > 0     # points devant le plan
+    mask_back = dot_products < 0.0
+    return (
+        mean_3d[mask_back],
+        scales[mask_back],
+        rotations[mask_back],
+        shs[mask_back],
+        opacities[mask_back]
+    )
+
+@jaxtyped(typechecker=typechecked)
+@torch.no_grad()
+def inception(mean_3d,scales,rotations,shs,opacities) :
+
+    mask = (mean_3d[:, 1] > -0.3) & (mean_3d[:, 1] < 0.5) & (mean_3d[:, 0] < 0.8) & (mean_3d[:, 0] > -0.8)
+
+    main = mean_3d[mask]    
+    double = mean_3d[mask]
+    scales = scales[mask]
+    rotations= rotations[mask]
+    shs = shs[mask]
+    opacities = opacities[mask]
+
+    double[:, 1] -= 0.8
+    double[:, 2] -= 0.2
+
+
+    merged = torch.cat([main, double], dim=0)
+    scales_merged    = torch.cat([scales, scales], dim=0)
+    rotations_merged = torch.cat([rotations, rotations], dim=0)
+    shs_merged       = torch.cat([shs, shs], dim=0)
+    opacities_merged = torch.cat([opacities, opacities], dim=0)
+
+    for i in range(15):
+
+        mask = torch.rand(main.size(0)) < 1.5**(-i)
+
+        double_i = main[mask]
+        scales_i = scales[mask]
+        rotations_i= rotations[mask]
+        shs_i = shs[mask]
+        opacities_i = opacities[mask]
+
+        double_i[:, 1] -= 0.8*(i+2)
+        double_i[:, 2] -= 0.2*(i+2)
+
+        merged = torch.cat([merged, double_i], dim=0)
+        scales_merged    = torch.cat([scales_merged, scales_i], dim=0)
+        rotations_merged = torch.cat([rotations_merged, rotations_i], dim=0)
+        shs_merged       = torch.cat([shs_merged, shs_i], dim=0)
+        opacities_merged = torch.cat([opacities_merged, opacities_i], dim=0)
+        
+
+    return merged,scales_merged,rotations_merged,shs_merged,opacities_merged

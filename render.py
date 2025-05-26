@@ -111,8 +111,6 @@ def load_camera_params(scene_type, device, use_half):
     c2ws = np.array(c2ws)
     img_height = torch.tensor(tr_dict['h']).to(device)
     img_width = torch.tensor(tr_dict['w']).to(device)
-    print(img_height)
-    print(img_width)
     fov = torch.tensor(tr_dict['camera_angle_x']).to(device)
     focal = convert_fov_to_focal(fov, img_width)
     if use_half:
@@ -120,7 +118,7 @@ def load_camera_params(scene_type, device, use_half):
         img_height = img_height // 2
         img_width = img_width // 2
     near = 1e-2
-    far = 10.0
+    far = 50.0
     proj_mat = compute_proj_mat(near, far, fov, fov)
     return c2ws, proj_mat, fov, focal, near, far, img_width, img_height
 
