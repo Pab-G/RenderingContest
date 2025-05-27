@@ -86,14 +86,15 @@ export TORCH_CUDA_ARCH_LIST="8.6"
 ### 4. Convert Camera Input Images (Optional HEIC to PNG)
 ```bash 
 pip install pillow-heif
-python convert.py
+pip install tqdm
+python convertor.py
 ```
-- The camera input pictures are gitignored: `camera_input_pic/`, `camera_input_pic_converted/`
+- The camera input pictures are gitignored: `camera_input_pics/`, `camera_input_pics_converted/`
 - Link to Download: https://drive.google.com/drive/folders/1uLroHJXeJLAx3mO67CzmIuwsV-WOKOWP?usp=sharing
 
 ### 5. Generate Camera Poses with COLMAP
 ```bash
-ns-process-data images --data ./camera_input_pic_converted --output-dir ./processed_images_colmap
+ns-process-data images --data ./camera_input_pics_converted --output-dir ./processed_images_colmap
 ```
 - The COLMAP–processed images are gitignored: `processed_images_colmap/`
 - Link to Download: https://drive.google.com/drive/folders/15lzamNo2JjFHmjq44iJfDnQnInIL363u?usp=sharing
