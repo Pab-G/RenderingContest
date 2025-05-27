@@ -45,13 +45,6 @@ conda activate nerfstudio_env
 pip install nerfstudio
 conda install -c conda-forge colmap -y
 conda install -c conda-forge ffmpeg -y
-conda install \
-  pytorch==2.5.1 \
-  torchvision==0.20.1 \
-  torchaudio==2.5.1 \
-  pytorch-cuda=11.8 \
-  -c pytorch -c nvidia \
-  -y
 ```
 
 ### 2. Install GSplat Extension
@@ -137,18 +130,6 @@ pip install torchmetrics[image]
 pip install imageio[ffmpeg]
 pip install plyfile tyro==0.6.0 jaxtyping==0.2.36 typeguard==2.13.3
 pip install simple-knn/.
-```
-
-#### PyTorch version might be incompatible with system CUDA version (Optional)
-- Check CUDA version installed and verify PyTorch CUDA Version compatibility
-```bash
-nvcc --version
-python -c "import torch; print(torch.__version__, torch.version.cuda)"
-```
-- Downgrade CUDA To 12.1
-```bash
-pip uninstall torch torchvision torchaudio -y
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
 ```
 
 ### 2. Render the Scene
