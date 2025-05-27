@@ -23,7 +23,7 @@ class GSRasterizer(object):
 
         self.sh_degree = 3
         self.white_bkgd = True
-        self.tile_size = 36
+        self.tile_size = 25  #36 for nubzuki
 
     def render_scene(self, scene: Scene, camera: Camera):
 
@@ -43,9 +43,10 @@ class GSRasterizer(object):
 
         #mean_3d,scales,rotations,shs,opacities = mirror(mean_3d,scales,rotations,shs,opacities)
         #mean_3d,scales,rotations,shs,opacities = shift(mean_3d,scales,rotations,shs,opacities)
-        #mean_3d,scales,rotations,shs,opacities = mask(mean_3d,scales,rotations,shs,opacities)
+        #mean_3d,scales,rotations,shs,opacities = maskv2(mean_3d,scales,rotations,shs,opacities)
         #mean_3d,scales,rotations,shs,opacities = filter(camera.camera_to_world,mean_3d,scales,rotations,shs,opacities)
-        mean_3d,scales,rotations,shs,opacities = inception(mean_3d,scales,rotations,shs,opacities)
+        mean_3d,scales,rotations,shs,opacities = filterfixe(mean_3d,scales,rotations,shs,opacities)
+        #mean_3d,scales,rotations,shs,opacities = inception(mean_3d,scales,rotations,shs,opacities)
 
         R = camera.camera_to_world[:3, :3]  # 3 x 3
         T = camera.camera_to_world[:3, 3:4]  # 3 x 1
@@ -445,6 +446,59 @@ def mask(mean_3d, scales, rotations, shs, opacities):
         rotations[mask],
         shs[mask],
         opacities[mask]
+    )
+
+
+def filterfixe(mean_3d, scales, rotations, shs, opacities):
+    double = mean_3d.clone()
+
+    mask = (double[:, 0] > -0.4) & (double[:, 0] < 0.4) & (double[:, 1] > -0.4) & (double[:, 1] < 0.4) & (double[:, 2] < 0.5) & (double[:, 2] > -1.0)
+
+    return (
+        double[mask],
+        scales[mask],
+        rotations[mask],
+        shs[mask],
+        opacities[mask]
+    )
+
+
+def maskv2(mean_3d, scales, rotations, shs, opacities):
+    # Clone the 3D positions
+    mask = (mean_3d[:, 1] < 0.5)
+            
+    positions = mean_3d[mask]    
+    scales = scales[mask]
+    rotations= rotations[mask]
+    shs = shs[mask]
+    opacities = opacities[mask]
+
+    # Approximate radius for each splat (you could refine this based on actual rotation + scale)
+    # Assume isotropic splats: take average of scale components
+    radius = scales.mean(dim=1) * 0.5  # half-size (like bounding sphere)
+
+    # Define forbidden box
+    forbidden_min = torch.tensor([-0.4, -100.0, -1.0], device=positions.device)
+    forbidden_max = torch.tensor([0.1, -0.3, 0.0], device=positions.device)
+
+    # Check if the sphere around each splat intersects the forbidden box
+    # Test: does the splat come within radius of the forbidden box?
+    too_close_x = (positions[:, 0] + radius > forbidden_min[0]) & (positions[:, 0] - radius < forbidden_max[0])
+    too_close_y = (positions[:, 1] + radius > forbidden_min[1]) & (positions[:, 1] - radius < forbidden_max[1])
+    too_close_z = (positions[:, 2] + radius > forbidden_min[2]) & (positions[:, 2] - radius < forbidden_max[2])
+
+    # Combine all axes
+    intersects = too_close_x & too_close_y & too_close_z
+
+    # Keep only splats that do NOT intersect the forbidden zone
+    keep = ~intersects
+
+    return (
+        positions[keep],
+        scales[keep],
+        rotations[keep],
+        shs[keep],
+        opacities[keep]
     )
 
 
