@@ -7,7 +7,7 @@ camera_input_pics_converted/
 src/__pycache__/
 data/nubzuki.ply
 data/human.ply
-data/nubzuki_alone.ply
+data/nubzuki_only.ply
 outputs/
 mirror_rendering_outputs/
 export/

@@ -45,6 +45,18 @@ conda activate nerfstudio_env
 pip install nerfstudio
 conda install -c conda-forge colmap -y
 conda install -c conda-forge ffmpeg -y
+conda install \
+  pytorch==2.5.1 \
+  torchvision==0.20.1 \
+  torchaudio==2.5.1 \
+  pytorch-cuda=11.8 \
+  -c pytorch -c nvidia \
+  -y
+```
+- Restart
+```bash
+conda deactivate
+conda remove --name nerfstudio_env --all
 ```
 
 ### 2. Install GSplat Extension
@@ -53,24 +65,21 @@ pip install git+https://github.com/nerfstudio-project/gsplat.git@v1.4.0
 ```
 
 ### 3. GPU Build Configuration
-#### Set Max Job
+#### Option 1: for RTX 4090
 ```bash 
 export MAX_JOBS=1
-```
-
-#### Set GPU Architecture
-##### Option 1: for RTX 4090
-```bash 
 export TORCH_CUDA_ARCH_LIST="8.9"
 ```
 
-##### Option 2: for A100
+#### Option 2: for A100
 ```bash 
+export MAX_JOBS=1
 export TORCH_CUDA_ARCH_LIST="8.0"
 ```
 
-##### Option 3: for A6000
+#### Option 3: for A6000
 ```bash 
+export MAX_JOBS=1
 export PATH=/usr/local/cuda-12.2/bin${PATH:+:${PATH}}
 export LD_LIBRARY_PATH=/usr/local/cuda-12.2/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
 export TORCH_CUDA_ARCH_LIST="8.6"
