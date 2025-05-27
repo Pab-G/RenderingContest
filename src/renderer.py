@@ -400,43 +400,20 @@ def mirror(mean_3d, scales, rotations, shs, opacities):
     mask = (mean_3d[:, 1] > -0.3)
 
     main = mean_3d[mask]
-    scales_main = scales[mask]
-    rotations_main = rotations[mask]
-    shs_main = shs[mask]
-    opacities_main = opacities[mask]
+    scales = scales[mask]
+    rotations = rotations[mask]
+    shs = shs[mask]
+    opacities = opacities[mask]
 
     mask2 = (main[:, 1] < 0.5)
 
     reflect = reflect_points(main)
 
     merged = torch.cat([main[mask2], reflect], dim=0)
-    scales = torch.cat([scales_main[mask2], scales_main], dim=0)
-    rotations = torch.cat([rotations_main[mask2], rotations_main], dim=0)
-    shs = torch.cat([shs_main[mask2], shs_main], dim=0)
-    opacities = torch.cat([opacities_main[mask2], opacities_main], dim=0)
-
-    # ---- Added Physical Mirror Surface ----
-    mirror_size = 1.0                                                                       # Adjust the mirror size
-    num_points_side = 200                                                                   # Adjust density: less dense grid for smoother surface
-    lin = torch.linspace(-mirror_size, mirror_size, num_points_side).to(mean_3d.device)
-    grid_x, grid_z = torch.meshgrid(lin, lin, indexing='ij')
-    mirror_points = torch.stack([
-        grid_x.reshape(-1),
-        torch.full((num_points_side**2,), -0.3, device=mean_3d.device),
-        grid_z.reshape(-1)
-    ], dim=1)
-
-    mirror_shs = torch.zeros((mirror_points.shape[0], shs.shape[1], 3), device=mean_3d.device)
-    mirror_shs[:, 0, :] = 1.0                                                               # Soft neutral color
-    mirror_scales = torch.full((mirror_points.shape[0], 3), 0.001, device=mean_3d.device)   # Adjusted Mirror Appearance (lower -> increase to smooth)
-    mirror_rotations = torch.tensor([[1, 0, 0, 0]] * mirror_points.shape[0], device=mean_3d.device).float()
-    mirror_opacities = torch.full((mirror_points.shape[0], 1), 0.5, device=mean_3d.device)  # Adjusted Mirror Appearance (lower -> increase to transparent)
-
-    merged = torch.cat([merged, mirror_points], dim=0)
-    scales = torch.cat([scales, mirror_scales], dim=0)
-    rotations = torch.cat([rotations, mirror_rotations], dim=0)
-    shs = torch.cat([shs, mirror_shs], dim=0)
-    opacities = torch.cat([opacities, mirror_opacities], dim=0)
+    scales = torch.cat([scales[mask2], scales], dim=0)
+    rotations = torch.cat([rotations[mask2], rotations], dim=0)
+    shs = torch.cat([shs[mask2], shs], dim=0)
+    opacities = torch.cat([opacities[mask2], opacities], dim=0)
 
     return merged, scales, rotations, shs, opacities
 
