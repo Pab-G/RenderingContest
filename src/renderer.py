@@ -6,12 +6,17 @@ The implementation is based on torch-splatting: https://github.com/hbb1/torch-sp
 
 from jaxtyping import Bool, Float, jaxtyped
 import torch
+import math
 from typeguard import typechecked
 
 
 from .camera import Camera
 from .scene import Scene
 from .sh import eval_sh
+
+z_deg = 50
+y_deg = -4
+x_deg = -4
 
 
 class GSRasterizer(object):
@@ -44,9 +49,11 @@ class GSRasterizer(object):
         #mean_3d,scales,rotations,shs,opacities = mirror(mean_3d,scales,rotations,shs,opacities)
         #mean_3d,scales,rotations,shs,opacities = shift(mean_3d,scales,rotations,shs,opacities)
         #mean_3d,scales,rotations,shs,opacities = maskv2(mean_3d,scales,rotations,shs,opacities)
-        #mean_3d,scales,rotations,shs,opacities = filter(camera.camera_to_world,mean_3d,scales,rotations,shs,opacities)
         mean_3d,scales,rotations,shs,opacities = filterfixe(mean_3d,scales,rotations,shs,opacities)
+        #mean_3d,scales,rotations,shs,opacities = duplication(mean_3d,scales,rotations,shs,opacities)
         #mean_3d,scales,rotations,shs,opacities = inception(mean_3d,scales,rotations,shs,opacities)
+        mean_3d,scales,rotations,shs,opacities = infiniteinception(mean_3d,scales,rotations,shs,opacities)
+        mean_3d,scales,rotations,shs,opacities = filter(camera.camera_to_world,mean_3d,scales,rotations,shs,opacities)
 
         R = camera.camera_to_world[:3, :3]  # 3 x 3
         T = camera.camera_to_world[:3, 3:4]  # 3 x 1
@@ -450,9 +457,51 @@ def mask(mean_3d, scales, rotations, shs, opacities):
 
 
 def filterfixe(mean_3d, scales, rotations, shs, opacities):
-    double = mean_3d.clone()
 
-    mask = (double[:, 0] > -0.4) & (double[:, 0] < 0.4) & (double[:, 1] > -0.4) & (double[:, 1] < 0.4) & (double[:, 2] < 0.5) & (double[:, 2] > -1.0)
+    z_rad = math.radians(z_deg)  # conversion en radians
+
+    cos_z = math.cos(z_rad)
+    sin_z = math.sin(z_rad)
+
+    y_rad = math.radians(y_deg)
+
+    cos_y = math.cos(y_rad)
+    sin_y = math.sin(y_rad)
+
+    x_rad = math.radians(x_deg)  # conversion en radians
+
+    cos_x = math.cos(x_rad)
+    sin_x = math.sin(x_rad)
+
+    double = mean_3d.clone()
+    Rz = torch.tensor([
+    [ cos_z, -sin_z, 0.0],
+    [ sin_z,  cos_z, 0.0],
+    [ 0.0,     0.0,  1.0]
+    ], device = mean_3d.device)
+
+    Ry = torch.tensor([
+    [ cos_y,  0.0, sin_y],
+    [ 0.0,    1.0, 0.0],
+    [-sin_y,  0.0, cos_y]
+    ], device = mean_3d.device)
+    
+    Rx = torch.tensor([
+    [1.0,     0.0,     0.0],
+    [0.0,  cos_x, -sin_x],
+    [0.0,  sin_x,  cos_x]
+    ], device = mean_3d.device)
+
+    double = torch.matmul(double, Rz)
+    double = torch.matmul(double, Ry)
+    double = torch.matmul(double, Rx)
+
+    #mask = (double[:, 0] + double[:, 1] < 0.5) & (double[:, 0] + double[:, 1] > -0.5) & \
+    #        (double[:, 1] - double[:, 0] < 0.5) & (double[:, 1] - double[:, 0] > -0.5) & \
+    #        (double[:, 2] < -0.1) & (double[:, 2] > -0.6)
+    mask = (double[:, 0] < 0.3) & (double[:, 0] > -0.2) & \
+            (double[:, 1] < 0.3) & (double[:, 1]  > -0.2) & \
+            (double[:, 2] < -0.1) & (double[:, 2] > -0.5)
 
     return (
         double[mask],
@@ -582,6 +631,116 @@ def inception(mean_3d,scales,rotations,shs,opacities) :
         rotations_merged = torch.cat([rotations_merged, rotations_i], dim=0)
         shs_merged       = torch.cat([shs_merged, shs_i], dim=0)
         opacities_merged = torch.cat([opacities_merged, opacities_i], dim=0)
+        
+
+    return merged,scales_merged,rotations_merged,shs_merged,opacities_merged
+
+
+def duplication(mean_3d,scales,rotations,shs,opacities) :
+    main = mean_3d.clone()
+    reflect = mean_3d.clone()
+    reflect[:, 1] += 0.7
+
+    merged = torch.cat([main, reflect], dim=0)
+
+    scales    = torch.cat([scales, scales], dim=0)
+    rotations = torch.cat([rotations, rotations], dim=0)
+    shs       = torch.cat([shs, shs], dim=0)
+    opacities = torch.cat([opacities, opacities], dim=0)
+    return merged,scales,rotations,shs,opacities
+
+
+def infiniteinception(mean_3d,scales,rotations,shs,opacities) :
+    d = 1.5 #space between each double
+    alpha = 1.5 #number above 1, rate at wich the double quality decrease
+    n = 8 #number of duplication
+
+    main = mean_3d.clone()
+    merged = mean_3d.clone()
+    scales_merged = scales.clone()
+    rotations_merged = rotations.clone()
+    shs_merged = shs.clone()
+    opacities_merged = opacities.clone()
+
+    for i in range(n):
+
+        mask = torch.rand(main.size(0)) < alpha**(-i)
+
+        double_i = main[mask]
+        scales_i = scales[mask]
+        rotations_i= rotations[mask]
+        shs_i = shs[mask]
+        opacities_i = opacities[mask]
+
+        double_i[:, 0] -= d*(i+1)
+        double_i[:, 1] -= d*(i+1)
+        for j in range(2*(i+1)+1):
+            merged = torch.cat([merged, double_i], dim=0)
+            scales_merged    = torch.cat([scales_merged, scales_i], dim=0)
+            rotations_merged = torch.cat([rotations_merged, rotations_i], dim=0)
+            shs_merged       = torch.cat([shs_merged, shs_i], dim=0)
+            opacities_merged = torch.cat([opacities_merged, opacities_i], dim=0)
+            double_i[:, 1] += d
+
+    for i in range(n):
+
+        mask = torch.rand(main.size(0)) < alpha**(-i)
+
+        double_i = main[mask]
+        scales_i = scales[mask]
+        rotations_i= rotations[mask]
+        shs_i = shs[mask]
+        opacities_i = opacities[mask]
+
+        double_i[:, 0] += d*(i+1)
+        double_i[:, 1] -= d*(i+1)
+        for j in range(2*(i+1)+1):
+            merged = torch.cat([merged, double_i], dim=0)
+            scales_merged    = torch.cat([scales_merged, scales_i], dim=0)
+            rotations_merged = torch.cat([rotations_merged, rotations_i], dim=0)
+            shs_merged       = torch.cat([shs_merged, shs_i], dim=0)
+            opacities_merged = torch.cat([opacities_merged, opacities_i], dim=0)
+            double_i[:, 1] += d
+
+    for i in range(n):
+
+        mask = torch.rand(main.size(0)) < alpha**(-i)
+
+        double_i = main[mask]
+        scales_i = scales[mask]
+        rotations_i= rotations[mask]
+        shs_i = shs[mask]
+        opacities_i = opacities[mask]
+
+        double_i[:, 1] -= d*(i+1)
+        double_i[:, 0] -= d*(i)
+        for j in range(2*(i)+1):
+            merged = torch.cat([merged, double_i], dim=0)
+            scales_merged    = torch.cat([scales_merged, scales_i], dim=0)
+            rotations_merged = torch.cat([rotations_merged, rotations_i], dim=0)
+            shs_merged       = torch.cat([shs_merged, shs_i], dim=0)
+            opacities_merged = torch.cat([opacities_merged, opacities_i], dim=0)
+            double_i[:, 0] += d
+
+    for i in range(n):
+
+        mask = torch.rand(main.size(0)) < alpha**(-i)
+
+        double_i = main[mask]
+        scales_i = scales[mask]
+        rotations_i= rotations[mask]
+        shs_i = shs[mask]
+        opacities_i = opacities[mask]
+
+        double_i[:, 1] += d*(i+1)
+        double_i[:, 0] -= d*(i)
+        for j in range(2*(i)+1):
+            merged = torch.cat([merged, double_i], dim=0)
+            scales_merged    = torch.cat([scales_merged, scales_i], dim=0)
+            rotations_merged = torch.cat([rotations_merged, rotations_i], dim=0)
+            shs_merged       = torch.cat([shs_merged, shs_i], dim=0)
+            opacities_merged = torch.cat([opacities_merged, opacities_i], dim=0)
+            double_i[:, 0] += d
         
 
     return merged,scales_merged,rotations_merged,shs_merged,opacities_merged
