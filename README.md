@@ -91,9 +91,9 @@ export TORCH_CUDA_ARCH_LIST="8.0"
 #### Option 3: for A6000
 ```bash 
 export MAX_JOBS=1
+export TORCH_CUDA_ARCH_LIST="8.6"
 export PATH=/usr/local/cuda-12.2/bin${PATH:+:${PATH}}
 export LD_LIBRARY_PATH=/usr/local/cuda-12.2/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
-export TORCH_CUDA_ARCH_LIST="8.6"
 ```
 
 ### 6. Train with Splatfacto
