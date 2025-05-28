@@ -8,6 +8,7 @@ src/__pycache__/
 data/nubzuki.ply
 data/human.ply
 data/nubzuki_only.ply
+data/nubzuki_only_v2.ply
 outputs/
 mirror_rendering_outputs/
 export/
