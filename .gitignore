@@ -20,4 +20,5 @@ camera_input_pics/
 camera_input_pics_converted/
 outputs/
 mirror_rendering_outputs/
+rendering_outputs/
 export/
