@@ -21,7 +21,3 @@ def convert(input_dir):
 
     print("Image converted.")
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--input_dir", type=str, default="camera_input_pics")
-    convert(input_dir=parser.parse_args().input_dir)
