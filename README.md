@@ -28,7 +28,7 @@ Rendering-Contest
 │   ├── scene.py
 │   └── sh.py
 ├── .gitignore
-├── convert.py
+├── convertor.py
 ├── evaluate.py
 ├── metrics.csv
 ├── render.py
@@ -53,18 +53,29 @@ conda install \
   -c pytorch -c nvidia \
   -y
 ```
-- Restart
-```bash
-conda deactivate
-conda remove --name nerfstudio_env --all
-```
 
-### 2. Install GSplat Extension
+### 2. Convert Camera Input Images (Optional HEIC to PNG)
+```bash 
+pip install pillow-heif
+pip install tqdm
+python convertor.py
+```
+- The camera input pictures are gitignored: `camera_input_pics/`, `camera_input_pics_converted/`
+- Link to Download: https://drive.google.com/drive/folders/1uLroHJXeJLAx3mO67CzmIuwsV-WOKOWP?usp=sharing
+
+### 3. Generate Camera Poses with COLMAP
+```bash
+ns-process-data images --data ./camera_input_pics_converted --output-dir ./processed_images_colmap
+```
+- The COLMAP–processed images are gitignored: `processed_images_colmap/`
+- Link to Download: https://drive.google.com/drive/folders/15lzamNo2JjFHmjq44iJfDnQnInIL363u?usp=sharing
+
+### 4. Install GSplat Extension
 ```bash 
 pip install git+https://github.com/nerfstudio-project/gsplat.git@v1.4.0
 ```
 
-### 3. GPU Build Configuration
+### 5. GPU Build Configuration
 #### Option 1: for RTX 4090
 ```bash 
 export MAX_JOBS=1
@@ -80,26 +91,10 @@ export TORCH_CUDA_ARCH_LIST="8.0"
 #### Option 3: for A6000
 ```bash 
 export MAX_JOBS=1
+export TORCH_CUDA_ARCH_LIST="8.6"
 export PATH=/usr/local/cuda-12.2/bin${PATH:+:${PATH}}
 export LD_LIBRARY_PATH=/usr/local/cuda-12.2/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
-export TORCH_CUDA_ARCH_LIST="8.6"
 ```
-
-### 4. Convert Camera Input Images (Optional HEIC to PNG)
-```bash 
-pip install pillow-heif
-pip install tqdm
-python convertor.py
-```
-- The camera input pictures are gitignored: `camera_input_pics/`, `camera_input_pics_converted/`
-- Link to Download: https://drive.google.com/drive/folders/1uLroHJXeJLAx3mO67CzmIuwsV-WOKOWP?usp=sharing
-
-### 5. Generate Camera Poses with COLMAP
-```bash
-ns-process-data images --data ./camera_input_pics_converted --output-dir ./processed_images_colmap
-```
-- The COLMAP–processed images are gitignored: `processed_images_colmap/`
-- Link to Download: https://drive.google.com/drive/folders/15lzamNo2JjFHmjq44iJfDnQnInIL363u?usp=sharing
 
 ### 6. Train with Splatfacto
 ```bash
@@ -121,12 +116,16 @@ mv export/splat/splat.ply export/splat/{rename}.ply
 ```
 - The Gaussian Splat is gitignored: `export/splat/`
 - Link to Download: https://drive.google.com/drive/folders/1U4meVGaYqIFF0W6BxDdylooCOpICI9cx?usp=sharing
+- Copy ply file to `data/` directory
+```bash
+cp export/splat/{rename}.ply data/
+```
 
 ## Mirror Rendering
 
 ### 1. Activate Conda Environment Same as CS479 Assignment 3
 ```bash
-conda deactivate nerfstudio_env
+conda deactivate
 conda activate cs479-gs
 ```
 
