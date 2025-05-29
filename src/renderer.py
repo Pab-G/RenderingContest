@@ -14,9 +14,7 @@ from .camera import Camera
 from .scene import Scene
 from .sh import eval_sh
 
-z_deg = 50
-y_deg = -4
-x_deg = -4
+
 
 
 class GSRasterizer(object):
@@ -30,7 +28,7 @@ class GSRasterizer(object):
         self.white_bkgd = True
         self.tile_size = 25  #36 for nubzuki
 
-    def render_scene(self, scene: Scene, camera: Camera):
+    def render_scene(self, scene: Scene, camera: Camera, idx):
 
         # Retrieve Gaussian parameters
         mean_3d = scene.mean_3d
@@ -46,13 +44,18 @@ class GSRasterizer(object):
         # NOTE: Do NOT modify this block.
         # Retrieve camera pose (extrinsic)
 
-        #mean_3d,scales,rotations,shs,opacities = mirror(mean_3d,scales,rotations,shs,opacities)
-        #mean_3d,scales,rotations,shs,opacities = shift(mean_3d,scales,rotations,shs,opacities)
-        #mean_3d,scales,rotations,shs,opacities = maskv2(mean_3d,scales,rotations,shs,opacities)
+        z_deg = -130
+        y_deg = 0
+        x_deg = 0
+        x_t = 0
+        y_t = 0
+        z_t = 0
+        w2o = transform(x_deg,y_deg,z_deg,x_t,y_t,z_t,device=mean_3d.device)
+        camera.camera_to_world = torch.matmul(w2o,camera.camera_to_world)
+
+        #camera.camera_to_world = camerafixe(camera.camera_to_world,x_deg,y_deg,z_deg,mean_3d.device)
         mean_3d,scales,rotations,shs,opacities = filterfixe(mean_3d,scales,rotations,shs,opacities)
-        #mean_3d,scales,rotations,shs,opacities = duplication(mean_3d,scales,rotations,shs,opacities)
-        #mean_3d,scales,rotations,shs,opacities = inception(mean_3d,scales,rotations,shs,opacities)
-        mean_3d,scales,rotations,shs,opacities = infiniteinception(mean_3d,scales,rotations,shs,opacities)
+        mean_3d,scales,rotations,shs,opacities = idx_manager(mean_3d,scales,rotations,shs,opacities,idx)
         mean_3d,scales,rotations,shs,opacities = filter(camera.camera_to_world,mean_3d,scales,rotations,shs,opacities)
 
         R = camera.camera_to_world[:3, :3]  # 3 x 3
@@ -379,6 +382,18 @@ def get_rect(pix_coord, radii, width, height):
     return rect_min, rect_max
 
 
+### New function
+
+def idx_manager(mean_3d,scales,rotations,shs,opacities,idx):
+    if idx < 50 :
+        return mirror(mean_3d,scales,rotations,shs,opacities)
+    elif idx <100:
+        return infiniteinception(mean_3d,scales,rotations,shs,opacities,1)
+    elif idx <220:
+        return infiniteinception(mean_3d,scales,rotations,shs,opacities,5)
+    else:
+        return mean_3d,scales,rotations,shs,opacities
+
 @jaxtyped(typechecker=typechecked)
 @torch.no_grad()
 def reflect_points(points):
@@ -442,66 +457,23 @@ def shift(mean_3d,scales,rotations,shs,opacities) :
     opacities = torch.cat([opacities, opacities], dim=0)
     return merged,scales,rotations,shs,opacities
 
-def mask(mean_3d, scales, rotations, shs, opacities):
-    double = mean_3d.clone()
-
-    mask = ((double[:, 0] < -0.4) | (double[:, 0] > 0.1) | (double[:, 1] > -0.2) | (double[:, 2] > 0)) & (double[:, 1] < 0.5)
-
-    return (
-        double[mask],
-        scales[mask],
-        rotations[mask],
-        shs[mask],
-        opacities[mask]
-    )
-
 
 def filterfixe(mean_3d, scales, rotations, shs, opacities):
 
-    z_rad = math.radians(z_deg)  # conversion en radians
-
-    cos_z = math.cos(z_rad)
-    sin_z = math.sin(z_rad)
-
-    y_rad = math.radians(y_deg)
-
-    cos_y = math.cos(y_rad)
-    sin_y = math.sin(y_rad)
-
-    x_rad = math.radians(x_deg)  # conversion en radians
-
-    cos_x = math.cos(x_rad)
-    sin_x = math.sin(x_rad)
-
     double = mean_3d.clone()
-    Rz = torch.tensor([
-    [ cos_z, -sin_z, 0.0],
-    [ sin_z,  cos_z, 0.0],
-    [ 0.0,     0.0,  1.0]
-    ], device = mean_3d.device)
 
-    Ry = torch.tensor([
-    [ cos_y,  0.0, sin_y],
-    [ 0.0,    1.0, 0.0],
-    [-sin_y,  0.0, cos_y]
-    ], device = mean_3d.device)
+    mask = (double[:, 0] < 0.15) & (double[:, 0] > -0.2) & \
+            (double[:, 1] < 0.25) & (double[:, 1]  > -0.3) & \
+            (double[:, 2] < 0.1) & (double[:, 2] > -0.362)
     
-    Rx = torch.tensor([
-    [1.0,     0.0,     0.0],
-    [0.0,  cos_x, -sin_x],
-    [0.0,  sin_x,  cos_x]
-    ], device = mean_3d.device)
+    mask = (double[:, 0] < 0.4) & (double[:, 0] > -0.4) & \
+            (double[:, 1] < 0.4) & (double[:, 1]  > -0.4) & \
+            (double[:, 2] < 0.1) & \
+            (2* double[:, 2] + double[:, 1] > -0.9)  & (5 * double[:, 2] - double[:, 1] > -1.8) &\
+            (double[:, 2] + double[:, 0] > -0.5) & (double[:, 2] - double[:, 0] > -0.4)
+    
 
-    double = torch.matmul(double, Rz)
-    double = torch.matmul(double, Ry)
-    double = torch.matmul(double, Rx)
-
-    #mask = (double[:, 0] + double[:, 1] < 0.5) & (double[:, 0] + double[:, 1] > -0.5) & \
-    #        (double[:, 1] - double[:, 0] < 0.5) & (double[:, 1] - double[:, 0] > -0.5) & \
-    #        (double[:, 2] < -0.1) & (double[:, 2] > -0.6)
-    mask = (double[:, 0] < 0.3) & (double[:, 0] > -0.2) & \
-            (double[:, 1] < 0.3) & (double[:, 1]  > -0.2) & \
-            (double[:, 2] < -0.1) & (double[:, 2] > -0.5)
+    double[:, 2] -= 0.2
 
     return (
         double[mask],
@@ -510,46 +482,6 @@ def filterfixe(mean_3d, scales, rotations, shs, opacities):
         shs[mask],
         opacities[mask]
     )
-
-
-def maskv2(mean_3d, scales, rotations, shs, opacities):
-    # Clone the 3D positions
-    mask = (mean_3d[:, 1] < 0.5)
-            
-    positions = mean_3d[mask]    
-    scales = scales[mask]
-    rotations= rotations[mask]
-    shs = shs[mask]
-    opacities = opacities[mask]
-
-    # Approximate radius for each splat (you could refine this based on actual rotation + scale)
-    # Assume isotropic splats: take average of scale components
-    radius = scales.mean(dim=1) * 0.5  # half-size (like bounding sphere)
-
-    # Define forbidden box
-    forbidden_min = torch.tensor([-0.4, -100.0, -1.0], device=positions.device)
-    forbidden_max = torch.tensor([0.1, -0.3, 0.0], device=positions.device)
-
-    # Check if the sphere around each splat intersects the forbidden box
-    # Test: does the splat come within radius of the forbidden box?
-    too_close_x = (positions[:, 0] + radius > forbidden_min[0]) & (positions[:, 0] - radius < forbidden_max[0])
-    too_close_y = (positions[:, 1] + radius > forbidden_min[1]) & (positions[:, 1] - radius < forbidden_max[1])
-    too_close_z = (positions[:, 2] + radius > forbidden_min[2]) & (positions[:, 2] - radius < forbidden_max[2])
-
-    # Combine all axes
-    intersects = too_close_x & too_close_y & too_close_z
-
-    # Keep only splats that do NOT intersect the forbidden zone
-    keep = ~intersects
-
-    return (
-        positions[keep],
-        scales[keep],
-        rotations[keep],
-        shs[keep],
-        opacities[keep]
-    )
-
 
 
 @jaxtyped(typechecker=typechecked)
@@ -590,51 +522,6 @@ def filter(w2c,mean_3d,scales,rotations,shs,opacities) :
         opacities[mask_back]
     )
 
-@jaxtyped(typechecker=typechecked)
-@torch.no_grad()
-def inception(mean_3d,scales,rotations,shs,opacities) :
-
-    mask = (mean_3d[:, 1] > -0.3) & (mean_3d[:, 1] < 0.5) & (mean_3d[:, 0] < 0.8) & (mean_3d[:, 0] > -0.8)
-
-    main = mean_3d[mask]    
-    double = mean_3d[mask]
-    scales = scales[mask]
-    rotations= rotations[mask]
-    shs = shs[mask]
-    opacities = opacities[mask]
-
-    double[:, 1] -= 0.8
-    double[:, 2] -= 0.2
-
-
-    merged = torch.cat([main, double], dim=0)
-    scales_merged    = torch.cat([scales, scales], dim=0)
-    rotations_merged = torch.cat([rotations, rotations], dim=0)
-    shs_merged       = torch.cat([shs, shs], dim=0)
-    opacities_merged = torch.cat([opacities, opacities], dim=0)
-
-    for i in range(15):
-
-        mask = torch.rand(main.size(0)) < 1.5**(-i)
-
-        double_i = main[mask]
-        scales_i = scales[mask]
-        rotations_i= rotations[mask]
-        shs_i = shs[mask]
-        opacities_i = opacities[mask]
-
-        double_i[:, 1] -= 0.8*(i+2)
-        double_i[:, 2] -= 0.2*(i+2)
-
-        merged = torch.cat([merged, double_i], dim=0)
-        scales_merged    = torch.cat([scales_merged, scales_i], dim=0)
-        rotations_merged = torch.cat([rotations_merged, rotations_i], dim=0)
-        shs_merged       = torch.cat([shs_merged, shs_i], dim=0)
-        opacities_merged = torch.cat([opacities_merged, opacities_i], dim=0)
-        
-
-    return merged,scales_merged,rotations_merged,shs_merged,opacities_merged
-
 
 def duplication(mean_3d,scales,rotations,shs,opacities) :
     main = mean_3d.clone()
@@ -652,8 +539,8 @@ def duplication(mean_3d,scales,rotations,shs,opacities) :
 
 def infiniteinception(mean_3d,scales,rotations,shs,opacities) :
     d = 1.5 #space between each double
-    alpha = 1.5 #number above 1, rate at wich the double quality decrease
-    n = 8 #number of duplication
+    alpha = 2.0 #number above 1, rate at wich the double quality decrease
+    n = 4    #number of duplication
 
     main = mean_3d.clone()
     merged = mean_3d.clone()
@@ -744,3 +631,24 @@ def infiniteinception(mean_3d,scales,rotations,shs,opacities) :
         
 
     return merged,scales_merged,rotations_merged,shs_merged,opacities_merged
+
+
+def transform(x_deg, y_deg, z_deg, x_t, y_t, z_t, *, dtype=None, device=None):
+    # angles → radians
+    a, b, c = torch.deg2rad(torch.as_tensor([x_deg, y_deg, z_deg],
+                                            dtype=dtype, device=device)) 
+    ca, sa = torch.cos(a), torch.sin(a)
+    cb, sb = torch.cos(b), torch.sin(b)
+    cc, sc = torch.cos(c), torch.sin(c)
+
+    R = torch.stack([
+        torch.stack([cb*cc,  cc*sa*sb - ca*sc,  sa*sc + ca*cc*sb]),
+        torch.stack([cb*sc,  ca*cc + sa*sb*sc,  ca*sb*sc - cc*sa]),
+        torch.stack([-sb   ,  cb*sa           ,  ca*cb           ])
+    ])                       
+
+    T = torch.eye(4, dtype=dtype, device=device)
+    T[:3, :3] = R
+    T[:3,  3] = torch.as_tensor([x_t, y_t, z_t],
+                                dtype=dtype, device=device)
+    return T
