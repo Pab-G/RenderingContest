@@ -26,7 +26,7 @@ from src.scene import Scene
 @dataclass
 class Args:
     
-    scene_type: Literal["nubzuki", "chair", "drums", "ficus", "hotdog", "lego", "materials", "mic", "ship"] = "nubzuki"
+    scene_type: Literal["nubzuki", "chair", "drums", "ficus", "hotdog", "lego", "materials", "mic", "ship", "human","nubzuki_alone","nubzuki_alone_v2"] = "nubzuki_only_v2"
     """Type of scene to render."""
     device_type: Literal["cpu", "cuda"] = "cuda"
     """Device to use for rendering."""
@@ -79,7 +79,7 @@ def main(args: Args):
         )
 
         # Render
-        img = renderer.render_scene(scene, cam)
+        img = renderer.render_scene(scene, cam,view_idx)
         img = img.reshape(img_width,img_height, 3)
         img = torch.clamp(img, 0.0, 1.0)
 
