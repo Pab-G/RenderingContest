@@ -391,11 +391,11 @@ def idx_manager(mean_3d,scales,rotations,shs,opacities,idx):
     elif idx <95:
         return infiniteinception_back(mean_3d,scales,rotations,shs,opacities,1)
     elif idx <118:
-        return infiniteinception_front(mean_3d,scales,rotations,shs,opacities,15)
-    elif idx <224:
-        return infiniteinception(mean_3d,scales,rotations,shs,opacities,15)
+        return infiniteinception_front(mean_3d,scales,rotations,shs,opacities,5)
+    elif idx <201:
+        return infiniteinception(mean_3d,scales,rotations,shs,opacities,5)
     else:
-        return infiniteinception_front(mean_3d,scales,rotations,shs,opacities,15)
+        return infiniteinception_front(mean_3d,scales,rotations,shs,opacities,5)
 
 @jaxtyped(typechecker=typechecked)
 @torch.no_grad()
@@ -590,7 +590,7 @@ def duplication(mean_3d,scales,rotations,shs,opacities) :
 
 def infiniteinception(mean_3d,scales,rotations,shs,opacities,n) :
     d = 1.5 #space between each double
-    alpha = 1.2 #number above 1, rate at wich the double quality decrease
+    alpha = 2.0 #number above 1, rate at wich the double quality decrease
 
     main = mean_3d.clone()
     merged = mean_3d.clone()
@@ -685,7 +685,7 @@ def infiniteinception(mean_3d,scales,rotations,shs,opacities,n) :
 
 def infiniteinception_front(mean_3d,scales,rotations,shs,opacities,n) :
     d = 1.5 #space between each double
-    alpha = 1.2 #number above 1, rate at wich the double quality decrease
+    alpha = 2.0 #number above 1, rate at wich the double quality decrease
 
     main = mean_3d.clone()
     merged = mean_3d.clone()
