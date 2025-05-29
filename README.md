@@ -53,6 +53,11 @@ conda install \
   -c pytorch -c nvidia \
   -y
 ```
+### FAST: 
+```bash 
+  python preprocess.py --GPU <GPU_NAME> -- remove_all--convert --colmap --train --ply --scene_name "<YOUR_SCENE_NAME>" --input_dir "<PATH_TO_YOUR_FOLDER>" 
+``` 
+
 
 ### 2. Convert Camera Input Images (Optional HEIC to PNG)
 ```bash 

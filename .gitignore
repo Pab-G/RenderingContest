@@ -1,15 +1,23 @@
+# Mac
 .DS_Store
 __MACOSX/
+
+# Python
+__pycache__/
+
+# Data Folder only add nerf_synthetic folder
+data/*
+!data/nerf_synthetic/
+
+# Other files
 *.xml
+*.zip
+*.ply
+
+# Other folders
 processed_images_colmap/
 camera_input_pics/
 camera_input_pics_converted/
-src/__pycache__/
-data/nubzuki.ply
-data/human.ply
-data/nubzuki_only.ply
-data/nubzuki_only_v2.ply
 outputs/
 mirror_rendering_outputs/
 export/
-
