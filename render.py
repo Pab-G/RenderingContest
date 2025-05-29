@@ -26,12 +26,12 @@ from src.scene import Scene
 @dataclass
 class Args:
     
-    scene_type: Literal["nubzuki_only", "human", "nubzuki", "chair"] = "nubzuki_only"
+    scene_type: Literal["nubzuki_only_v2", "nubzuki_only", "human", "nubzuki", "chair"] = "nubzuki_only_v2"
     """Type of scene to render."""
     device_type: Literal["cpu", "cuda"] = "cuda"
     """Device to use for rendering."""
 
-    out_root: Path = Path("./mirror_rendering_outputs")
+    out_root: Path = Path("./rendering_outputs")
     """Root directory for saving outputs."""
 
 def main(args: Args):
