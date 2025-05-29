@@ -418,27 +418,73 @@ def reflect_points(points):
 
 @jaxtyped(typechecker=typechecked)
 @torch.no_grad()
-def mirror(mean_3d,scales,rotations,shs,opacities) :
-    mask = (mean_3d[:, 1] > -0.3)
-            
-    main = mean_3d[mask]    
-    double = mean_3d[mask]
-    scales = scales[mask]
-    rotations= rotations[mask]
-    shs = shs[mask]
-    opacities = opacities[mask]
+def mirror(mean_3d, scales, rotations, shs, opacities):
+    # ---------- pick the part we keep / mirror ------------------------------
+    base_mask   = (mean_3d[:, 1] > -0.3)           # above mirror plane
+    vis_mask    = (mean_3d[base_mask, 1] < 0.5)    # only show this slice
 
-    mask2 = (main[:, 1] < 0.5)
-            
-    reflect = reflect_points(main)
+    pts  = mean_3d [base_mask][vis_mask]           # [N,3]
+    scl  = scales   [base_mask][vis_mask]
+    rot  = rotations[base_mask][vis_mask]          # quaternion (w,x,y,z)
+    sh   = shs      [base_mask][vis_mask]
+    opa  = opacities[base_mask][vis_mask]
 
-    merged = torch.cat([main[mask2], reflect], dim=0)
-    scales    = torch.cat([scales[mask2], scales], dim=0)
-    rotations = torch.cat([rotations[mask2], rotations], dim=0)
-    shs       = torch.cat([shs[mask2], shs], dim=0)
-    opacities = torch.cat([opacities[mask2], opacities], dim=0)
+    z_deg = 30.0                                  # tweak angle here
+    R_obj = transform(0, 0, z_deg, 0, 0, 0,
+                      device=pts.device)[:3, :3]   # 3×3
 
-    return merged,scales,rotations,shs,opacities
+    pts = (R_obj @ pts.T).T                       # rotate centres
+    rot = quat_mul(matrix_to_quat(R_obj[None]),   # rotate quats
+                   rot)
+
+    # ---------- reflected centres ------------------------------------------
+    pts_ref = reflect_points(pts)                  # y → −y (plane y=−0.3)
+
+    # ---------- reflected orientation --------------------------------------
+    M = torch.diag(torch.tensor([1., -1., 1.], device=pts.device))  # reflection
+
+    R      = build_rotation(rot)                   # [N,3,3]
+    R_ref  = M @ R @ M                             # mirror the frame
+
+    # SVD to pull out pure rotation (avoids scale pollution)
+    # R_ref = U Σ Vᵀ  →  R_clean = U Vᵀ  (still det=+1)
+    U, _, Vt = torch.linalg.svd(R_ref)
+    R_clean  = U @ Vt
+
+    rot_ref = matrix_to_quat(R_clean)              # back to quaternion
+
+    # ---------- reflected SH lighting (flip y-odd bands) --------------------
+    sh_ref = sh.clone()
+    sh_ref[:, 1::2, :] *= -1                       # l = 1,3,5,…
+
+    # ---------- stack base + mirror ----------------------------------------
+    merged      = torch.cat([pts,  pts_ref], 0)
+    scales_out  = torch.cat([scl,  scl     ], 0)
+    rot_out     = torch.cat([rot,  rot_ref ], 0)
+    sh_out      = torch.cat([sh,   sh_ref  ], 0)
+    opa_out     = torch.cat([opa,  opa     ], 0)
+
+    return merged, scales_out, rot_out, sh_out, opa_out
+
+
+# helper: rotation-matrix → unit quaternion  (w,x,y,z)
+def matrix_to_quat(R: torch.Tensor) -> torch.Tensor:
+    m00, m11, m22 = R[:, 0, 0], R[:, 1, 1], R[:, 2, 2]
+    tr = m00 + m11 + m22
+    qw = torch.sqrt(torch.clamp(tr + 1.0, min=1e-8)) * 0.5
+    qx = torch.where(qw > 1e-4, (R[:, 2, 1] - R[:, 1, 2]) / (4*qw),
+                     torch.sqrt(torch.clamp(1 + m00 - m11 - m22, min=1e-8)) * 0.5)
+    qy = torch.where(qw > 1e-4,
+                     (R[:, 0, 2] - R[:, 2, 0]) / (4*qw),
+                     (R[:, 0, 1] + R[:, 1, 0]) / (4*qx + 1e-8))
+    qz = torch.where(qw > 1e-4,
+                     (R[:, 1, 0] - R[:, 0, 1]) / (4*qw),
+                     (R[:, 0, 2] + R[:, 2, 0]) / (4*qx + 1e-8))
+    quat = torch.stack([qw, qx, qy, qz], dim=1)
+    return quat / quat.norm(dim=1, keepdim=True)
+
+
+
 
 
 
@@ -652,3 +698,15 @@ def transform(x_deg, y_deg, z_deg, x_t, y_t, z_t, *, dtype=None, device=None):
     T[:3,  3] = torch.as_tensor([x_t, y_t, z_t],
                                 dtype=dtype, device=device)
     return T
+
+def quat_mul(q1, q2):
+    """
+    Multiplication of two quaternions.
+    """
+    w1, x1, y1, z1 = q1.T
+    w2, x2, y2, z2 = q2.T
+    w = w1 * w2 - x1 * x2 - y1 * y2 - z1 * z2
+    x = w1 * x2 + x1 * w2 + y1 * z2 - z1 * y2
+    y = w1 * y2 + y1 * w2 + z1 * x2 - x1 * z2
+    z = w1 * z2 + z1 * w2 + x1 * y2 - y1 * x2
+    return torch.stack([w, x, y, z], dim=1)
