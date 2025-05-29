@@ -51,10 +51,11 @@ class GSRasterizer(object):
         y_t = 0
         z_t = 0
         w2o = transform(x_deg,y_deg,z_deg,x_t,y_t,z_t,device=mean_3d.device)
-        camera.camera_to_world = torch.matmul(w2o,camera.camera_to_world)
+        #camera.camera_to_world = torch.matmul(w2o,camera.camera_to_world)
 
         #camera.camera_to_world = camerafixe(camera.camera_to_world,x_deg,y_deg,z_deg,mean_3d.device)
         mean_3d,scales,rotations,shs,opacities = filterfixe(mean_3d,scales,rotations,shs,opacities)
+        mean_3d,scales,rotations,shs,opacities = alignz(mean_3d,scales,rotations,shs,opacities,130.0)
         mean_3d,scales,rotations,shs,opacities = idx_manager(mean_3d,scales,rotations,shs,opacities,idx)
         mean_3d,scales,rotations,shs,opacities = filter(camera.camera_to_world,mean_3d,scales,rotations,shs,opacities)
 
@@ -385,10 +386,12 @@ def get_rect(pix_coord, radii, width, height):
 ### New function
 
 def idx_manager(mean_3d,scales,rotations,shs,opacities,idx):
-    if idx < 50 :
+    if idx < 68 :
         return mirror(mean_3d,scales,rotations,shs,opacities)
-    elif idx <100:
+    elif idx <94:
         return infiniteinception(mean_3d,scales,rotations,shs,opacities,1)
+    elif idx <118:
+        return infiniteinception_front(mean_3d,scales,rotations,shs,opacities,5)
     elif idx <220:
         return infiniteinception(mean_3d,scales,rotations,shs,opacities,5)
     else:
@@ -397,15 +400,15 @@ def idx_manager(mean_3d,scales,rotations,shs,opacities,idx):
 @jaxtyped(typechecker=typechecked)
 @torch.no_grad()
 def reflect_points(points):
-    # this function creat a mirror in the plan y = ax + b
+    # this function creat a mirror in the plan x = ay + b
     a = 0.0
-    b = -0.3
+    b = 0.75
     # Normal vector of the plane: n = (0.1, -1, 0), normalized
-    n = torch.tensor([a, -1.0, 0.0], device=points.device, dtype=points.dtype)
+    n = torch.tensor([1.0, a, 0.0], device=points.device, dtype=points.dtype)
     n = n / torch.norm(n)
 
     # A point on the plane: (0, -0.3, 0)
-    p0 = torch.tensor([0.0, b, 0.0], device=points.device, dtype=points.dtype)
+    p0 = torch.tensor([b, 0.0, 0.0], device=points.device, dtype=points.dtype)
 
     # Vector from p0 to each point
     vec = points - p0
@@ -418,7 +421,7 @@ def reflect_points(points):
 
 @jaxtyped(typechecker=typechecked)
 @torch.no_grad()
-def mirror(mean_3d, scales, rotations, shs, opacities):
+def alignz(mean_3d, scales, rotations, shs, opacities,z_deg):
     # ---------- pick the part we keep / mirror ------------------------------
     base_mask   = (mean_3d[:, 1] > -0.3)           # above mirror plane
     vis_mask    = (mean_3d[base_mask, 1] < 0.5)    # only show this slice
@@ -429,19 +432,21 @@ def mirror(mean_3d, scales, rotations, shs, opacities):
     sh   = shs      [base_mask][vis_mask]
     opa  = opacities[base_mask][vis_mask]
 
-    z_deg = 30.0                                  # tweak angle here
     R_obj = transform(0, 0, z_deg, 0, 0, 0,
                       device=pts.device)[:3, :3]   # 3×3
 
     pts = (R_obj @ pts.T).T                       # rotate centres
     rot = quat_mul(matrix_to_quat(R_obj[None]),   # rotate quats
                    rot)
+    
+    return pts, scl, rot, sh, opa
 
+def mirror(pts, scl, rot, sh, opa):
     # ---------- reflected centres ------------------------------------------
     pts_ref = reflect_points(pts)                  # y → −y (plane y=−0.3)
 
     # ---------- reflected orientation --------------------------------------
-    M = torch.diag(torch.tensor([1., -1., 1.], device=pts.device))  # reflection
+    M = torch.diag(torch.tensor([-1., 1., 1.], device=pts.device))  # reflection
 
     R      = build_rotation(rot)                   # [N,3,3]
     R_ref  = M @ R @ M                             # mirror the frame
@@ -583,10 +588,9 @@ def duplication(mean_3d,scales,rotations,shs,opacities) :
     return merged,scales,rotations,shs,opacities
 
 
-def infiniteinception(mean_3d,scales,rotations,shs,opacities) :
+def infiniteinception(mean_3d,scales,rotations,shs,opacities,n) :
     d = 1.5 #space between each double
     alpha = 2.0 #number above 1, rate at wich the double quality decrease
-    n = 4    #number of duplication
 
     main = mean_3d.clone()
     merged = mean_3d.clone()
@@ -678,6 +682,40 @@ def infiniteinception(mean_3d,scales,rotations,shs,opacities) :
 
     return merged,scales_merged,rotations_merged,shs_merged,opacities_merged
 
+
+def infiniteinception_front(mean_3d,scales,rotations,shs,opacities,n) :
+    d = 1.5 #space between each double
+    alpha = 2.0 #number above 1, rate at wich the double quality decrease
+
+    main = mean_3d.clone()
+    merged = mean_3d.clone()
+    scales_merged = scales.clone()
+    rotations_merged = rotations.clone()
+    shs_merged = shs.clone()
+    opacities_merged = opacities.clone()
+
+    for i in range(n):
+
+        mask = torch.rand(main.size(0)) < alpha**(-i)
+
+        double_i = main[mask]
+        scales_i = scales[mask]
+        rotations_i= rotations[mask]
+        shs_i = shs[mask]
+        opacities_i = opacities[mask]
+
+        double_i[:, 0] -= d*(i+1)
+        double_i[:, 1] -= d*(i+1)
+        for j in range(2*(i+1)+1):
+            merged = torch.cat([merged, double_i], dim=0)
+            scales_merged    = torch.cat([scales_merged, scales_i], dim=0)
+            rotations_merged = torch.cat([rotations_merged, rotations_i], dim=0)
+            shs_merged       = torch.cat([shs_merged, shs_i], dim=0)
+            opacities_merged = torch.cat([opacities_merged, opacities_i], dim=0)
+            double_i[:, 1] += d
+
+    return merged,scales_merged,rotations_merged,shs_merged,opacities_merged
+    
 
 def transform(x_deg, y_deg, z_deg, x_t, y_t, z_t, *, dtype=None, device=None):
     # angles → radians
