@@ -386,16 +386,16 @@ def get_rect(pix_coord, radii, width, height):
 ### New function
 
 def idx_manager(mean_3d,scales,rotations,shs,opacities,idx):
-    if idx < 68 :
+    if idx < 66 :
         return mirror(mean_3d,scales,rotations,shs,opacities)
-    elif idx <94:
-        return infiniteinception(mean_3d,scales,rotations,shs,opacities,1)
+    elif idx <95:
+        return infiniteinception_back(mean_3d,scales,rotations,shs,opacities,1)
     elif idx <118:
-        return infiniteinception_front(mean_3d,scales,rotations,shs,opacities,5)
-    elif idx <220:
-        return infiniteinception(mean_3d,scales,rotations,shs,opacities,5)
+        return infiniteinception_front(mean_3d,scales,rotations,shs,opacities,15)
+    elif idx <224:
+        return infiniteinception(mean_3d,scales,rotations,shs,opacities,15)
     else:
-        return mean_3d,scales,rotations,shs,opacities
+        return infiniteinception_front(mean_3d,scales,rotations,shs,opacities,15)
 
 @jaxtyped(typechecker=typechecked)
 @torch.no_grad()
@@ -590,7 +590,7 @@ def duplication(mean_3d,scales,rotations,shs,opacities) :
 
 def infiniteinception(mean_3d,scales,rotations,shs,opacities,n) :
     d = 1.5 #space between each double
-    alpha = 2.0 #number above 1, rate at wich the double quality decrease
+    alpha = 1.2 #number above 1, rate at wich the double quality decrease
 
     main = mean_3d.clone()
     merged = mean_3d.clone()
@@ -685,7 +685,7 @@ def infiniteinception(mean_3d,scales,rotations,shs,opacities,n) :
 
 def infiniteinception_front(mean_3d,scales,rotations,shs,opacities,n) :
     d = 1.5 #space between each double
-    alpha = 2.0 #number above 1, rate at wich the double quality decrease
+    alpha = 1.2 #number above 1, rate at wich the double quality decrease
 
     main = mean_3d.clone()
     merged = mean_3d.clone()
@@ -704,15 +704,46 @@ def infiniteinception_front(mean_3d,scales,rotations,shs,opacities,n) :
         shs_i = shs[mask]
         opacities_i = opacities[mask]
 
-        double_i[:, 0] -= d*(i+1)
+        double_i[:, 0] += d*(i+1)
         double_i[:, 1] -= d*(i+1)
-        for j in range(2*(i+1)+1):
+        for j in range(2*(i+1)+2):
             merged = torch.cat([merged, double_i], dim=0)
             scales_merged    = torch.cat([scales_merged, scales_i], dim=0)
             rotations_merged = torch.cat([rotations_merged, rotations_i], dim=0)
             shs_merged       = torch.cat([shs_merged, shs_i], dim=0)
             opacities_merged = torch.cat([opacities_merged, opacities_i], dim=0)
             double_i[:, 1] += d
+
+    return merged,scales_merged,rotations_merged,shs_merged,opacities_merged
+
+
+def infiniteinception_back(mean_3d,scales,rotations,shs,opacities,n) :
+    d = 1.5 #space between each double
+    alpha = 2.0 #number above 1, rate at wich the double quality decrease
+
+    double_i = mean_3d.clone()
+    merged = mean_3d.clone()
+    scales_merged = scales.clone()
+    rotations_merged = rotations.clone()
+    shs_merged = shs.clone()
+    opacities_merged = opacities.clone()
+
+    double_i[:,0] -= d
+
+    merged = torch.cat([merged, double_i], dim=0)
+    scales_merged    = torch.cat([scales_merged, scales], dim=0)
+    rotations_merged = torch.cat([rotations_merged, rotations], dim=0)
+    shs_merged       = torch.cat([shs_merged, shs], dim=0)
+    opacities_merged = torch.cat([opacities_merged, opacities], dim=0)
+
+    double_i[:,0] += d
+    double_i[:,1] -= d
+
+    merged = torch.cat([merged, double_i], dim=0)
+    scales_merged    = torch.cat([scales_merged, scales], dim=0)
+    rotations_merged = torch.cat([rotations_merged, rotations], dim=0)
+    shs_merged       = torch.cat([shs_merged, shs], dim=0)
+    opacities_merged = torch.cat([opacities_merged, opacities], dim=0)
 
     return merged,scales_merged,rotations_merged,shs_merged,opacities_merged
     

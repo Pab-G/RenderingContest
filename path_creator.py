@@ -3,7 +3,7 @@ import numpy as np
 import math
 
 # Load the user‑provided JSON to copy intrinsics & metadata
-input_path = "./data/nerf_synthetic/nubzuki_alone/transforms_test.json"
+input_path = "./data/nerf_synthetic/nubzuki_only_v2/transforms_test.json"
 with open(input_path, "r") as f:
     data = json.load(f)
 
@@ -88,8 +88,8 @@ for i, theta in enumerate(angles3):
     
     add_frame(pos, tangent, len(frames))
 
-num4 = 40
-end = 1.5 * 3 + 1.0
+num4 = 30
+end = 1.5 * 2 + 1.0
 t = np.linspace(0, end, num4)
 for i,n in enumerate(t):
     x = (n + 1.5/2) % 1.5 - 1.5/2
@@ -107,15 +107,13 @@ start_angle4 = 1.5 * math.pi
 t = np.linspace(0, 1, num4)
 ease_out_t = 1 - (1 - t)**2
 angles4 = start_angle4 + t * arc4
-CENTER = np.array([1, 1, -0.5])
+CENTER = np.array([-2, -2, -0.5])
 RADIUS = 2.0
 
 for i, theta in enumerate(angles4):
     x = CENTER[0] + RADIUS * math.cos(theta)
     y = CENTER[1] + RADIUS * math.sin(theta)
     z = CENTER[2]
-    x = (x + 1.5/2) % 1.5 - 1.5/2
-    y = (y + 1.5/2) % 1.5 - 1.5/2
     pos = np.array([x, y, z])
     
     tangent = np.array([-math.sin(theta), math.cos(theta), 0])
@@ -127,7 +125,7 @@ arc5 = 0.5 * math.pi
 start_angle5 = 1.5 * math.pi 
 t = np.linspace(0, 1, num5)
 ease_out_t = 1 - (1 - t)**2
-angles5 = start_angle5 + t * arc5
+angles5 = start_angle5 + ease_out_t * arc5
 CENTER = np.array([0.0, 0.0, -0.5])
 RADIUS = 2.0
 
@@ -139,7 +137,7 @@ for i, theta in enumerate(angles5):
     forward = CENTER - pos
     add_frame(pos, forward, len(frames))
 
-assert len(frames) == 270, f"Total frames {len(frames)}≠150"
+assert len(frames) == 260, f"Total frames {len(frames)}≠260"
 
 output["frames"] = frames
 
