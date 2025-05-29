@@ -469,6 +469,15 @@ def mirror(pts, scl, rot, sh, opa):
     sh_out      = torch.cat([sh,   sh_ref  ], 0)
     opa_out     = torch.cat([opa,  opa     ], 0)
 
+    double = pts.clone()
+    double[:,1] += 1.5
+
+    merged = torch.cat([merged, double], dim=0)
+    scales_out    = torch.cat([scales_out, scl], dim=0)
+    rot_out = torch.cat([rot_out, rot], dim=0)
+    sh_out       = torch.cat([sh_out, sh], dim=0)
+    opa_out = torch.cat([opa_out, opa], dim=0)
+
     return merged, scales_out, rot_out, sh_out, opa_out
 
 
@@ -738,6 +747,14 @@ def infiniteinception_back(mean_3d,scales,rotations,shs,opacities,n) :
 
     double_i[:,0] += d
     double_i[:,1] -= d
+
+    merged = torch.cat([merged, double_i], dim=0)
+    scales_merged    = torch.cat([scales_merged, scales], dim=0)
+    rotations_merged = torch.cat([rotations_merged, rotations], dim=0)
+    shs_merged       = torch.cat([shs_merged, shs], dim=0)
+    opacities_merged = torch.cat([opacities_merged, opacities], dim=0)
+
+    double_i[:,1] += 2*d
 
     merged = torch.cat([merged, double_i], dim=0)
     scales_merged    = torch.cat([scales_merged, scales], dim=0)
