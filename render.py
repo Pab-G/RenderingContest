@@ -26,7 +26,7 @@ from src.scene import Scene
 @dataclass
 class Args:
     
-    scene_type: Literal["nubzuki", "chair", "drums", "ficus", "hotdog", "lego", "materials", "mic", "ship", "human","nubzuki_alone","nubzuki_alone_v2"] = "nubzuki_only_v2"
+    scene_type: Literal["nubzuki_alone_v2"] = "nubzuki_only_v2"
     """Type of scene to render."""
     device_type: Literal["cpu", "cuda"] = "cuda"
     """Device to use for rendering."""
@@ -97,7 +97,7 @@ def load_camera_params(scene_type, device, use_half):
     """
     data_root = Path(f"data/nerf_synthetic/{scene_type}")
     assert data_root.exists(), f"Path {data_root} does not exist."
-    tr_path = data_root / "transforms_test.json"
+    tr_path = data_root / "nubzuki_alone_v2.json"
     assert tr_path.exists(), f"Path {tr_path} does not exist."
     tr_dict = json.load(open(tr_path, "r"))
 

@@ -3,7 +3,7 @@ import numpy as np
 import math
 
 # Load the user‑provided JSON to copy intrinsics & metadata
-input_path = "./data/nerf_synthetic/nubzuki_only_v2/transforms_test.json"
+input_path = "./data/nerf_synthetic/nubzuki_only_v2/nubzuki_alone_v2.json"
 with open(input_path, "r") as f:
     data = json.load(f)
 
@@ -141,7 +141,7 @@ assert len(frames) == 260, f"Total frames {len(frames)}≠260"
 
 output["frames"] = frames
 
-out_path = "./data/nerf_synthetic/nubzuki_only_v2/transforms_test.json"
+out_path = "./data/nerf_synthetic/nubzuki_only_v2/nubzuki_alone_v2.json"
 with open(out_path, "w") as f:
     json.dump(output, f, indent=4)
 

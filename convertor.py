@@ -19,5 +19,3 @@ def convert(input_dir):
         out_path = os.path.join(output_dir, f"{i:03d}.jpg")
         img.save(out_path, format="JPEG", quality=95)
 
-    print("Image converted.")
-

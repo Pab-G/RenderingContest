@@ -10,16 +10,15 @@
 
 ## Code Structure
 This codebase is organized as the following directory tree.
+Important: It will only look like this after all uncessecary folders are removed (running preprocess.py)
 ```
 Rendering-Contest
 │
-├── camera_input_images
-├── camera_input_images_converted
+├── camera_input_images (Your Camera input files)
 ├── data
-├── export
-├── mirror_rendering_outputs
-├── outputs
-├── processed_images_colmap
+│   ├── nubuzuki_only_v2
+│       └── transforms_test.json
+├── rendering_outputs
 ├── src
 │   ├── camera.py
 │   ├── constants.py
@@ -29,10 +28,9 @@ Rendering-Contest
 │   └── sh.py
 ├── .gitignore
 ├── convertor.py
-├── evaluate.py
-├── metrics.csv
 ├── render.py
-├── render_all.sh
+├── preprocess.py
+├── path_creator.py
 └── README.md
 ```
 
@@ -43,6 +41,9 @@ Rendering-Contest
 conda create -n nerfstudio_env -c conda-forge python=3.10 -y
 conda activate nerfstudio_env
 pip install nerfstudio
+pip install pillow-heif
+pip install tqdm
+pip install git+https://github.com/nerfstudio-project/gsplat.git@v1.4.0
 conda install -c conda-forge colmap -y
 conda install -c conda-forge ffmpeg -y
 conda install \
@@ -53,16 +54,17 @@ conda install \
   -c pytorch -c nvidia \
   -y
 ```
-### FAST: 
+### Preprocessing (automated): 
+Script only supports GPU: RTX490, A100, A6000
+Scene_name for our scene is: nubzuki_only_v2
+input_dir you can download the input pictures converted or unconverted: https://drive.google.com/drive/folders/1zehi2jmguVz13y1qFWzGgW9K9I2LFjAj
 ```bash 
-  python preprocess.py --GPU <GPU_NAME> -- remove_all--convert --colmap --train --ply --scene_name "<YOUR_SCENE_NAME>" --input_dir "<PATH_TO_YOUR_FOLDER>" 
+  python preprocess.py  --remove_all --convert --colmap --train --ply --scene_name "<YOUR_SCENE_NAME>" --input_dir "<PATH_TO_YOUR_FOLDER>" --GPU "<GPU_NAME>"
 ``` 
 
-
+### Preprocessing (Step-by-step):
 ### 2. Convert Camera Input Images (Optional HEIC to PNG)
 ```bash 
-pip install pillow-heif
-pip install tqdm
 python convertor.py
 ```
 - The camera input pictures are gitignored: `camera_input_pics/`, `camera_input_pics_converted/`
@@ -75,12 +77,8 @@ ns-process-data images --data ./camera_input_pics_converted --output-dir ./proce
 - The COLMAP–processed images are gitignored: `processed_images_colmap/`
 - Link to Download: https://drive.google.com/drive/folders/15lzamNo2JjFHmjq44iJfDnQnInIL363u?usp=sharing
 
-### 4. Install GSplat Extension
-```bash 
-pip install git+https://github.com/nerfstudio-project/gsplat.git@v1.4.0
-```
+### 4. GPU Build Configuration
 
-### 5. GPU Build Configuration
 #### Option 1: for RTX 4090
 ```bash 
 export MAX_JOBS=1
@@ -145,7 +143,13 @@ pip install plyfile tyro==0.6.0 jaxtyping==0.2.36 typeguard==2.13.3
 pip install simple-knn/.
 ```
 
-### 2. Render the Scene
+### 2. Scene Path:
+```bash
+python path_creator.py
+```
+
+
+### 3. Render the Scene
 ```bash
 python render.py
 ```
@@ -153,3 +157,4 @@ python render.py
 - Link to Download: https://drive.google.com/drive/folders/1ZRAbBIHspBpg4I_Ix_4AJKGpS3aoricH?usp=sharing
 
 ---
+

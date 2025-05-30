@@ -28,11 +28,9 @@ def main(args):
         raise ValueError(f"Invalid GPU: {args.GPU}")
     
     if args.convert:
-        print("CONVERT")
         convert(args.input_dir) 
     
     if args.colmap:
-        print("Will now run COLMAP..")
         try: 
             subprocess.run([
                 "ns-process-data",
@@ -106,11 +104,10 @@ if __name__ == "__main__":
     ################################################################################################################################################################
     parser = argparse.ArgumentParser()
     parser = argparse.ArgumentParser(description="To preprocess:")
-    print(f"Make sure that you have no folder called camera_input_pics_converted")
     parser.add_argument("--GPU", type=str, default="A100", help= "GPU you are using, default is A100")
     parser.add_argument("--train", action='store_true', default=False, help= "Whether to train the Splats, default is False")
     parser.add_argument("--ply", action='store_true', default=False, help= "Whether you already have the PLY file, default is False")
-    parser.add_argument("--scene_name", type=str, default="scene", help= "Name of the scene, default is scene")
+    parser.add_argument("--scene_name", type=str, default="nubzuki_only_v2", help= "Name of the scene, default is nubzuki_only_v2")
     parser.add_argument("--input_dir", type=str, default="camera_input_pics", help= "Path to the input directory, default is camera_input_pics")
     parser.add_argument("--remove_all", action='store_true', default=False, help= "Whether to remove created, not needed folders, default is False")
     parser.add_argument("--convert", action='store_true', default=False, help= "Whether to convert the images from HEIC to PNG, default is True")
