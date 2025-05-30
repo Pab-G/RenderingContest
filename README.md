@@ -8,6 +8,13 @@
   </p>
 </div>
 
+<p align="center">
+  <video src="media/video_demo.mp4"
+         width="480"
+         autoplay loop muted playsinline
+         controls></video>
+</p>
+
 ## Code Structure
 This codebase is organized as the following directory tree.
 Important: It will only look like this after all uncessecary folders are removed (running preprocess.py)
