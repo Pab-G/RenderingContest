@@ -391,11 +391,11 @@ def idx_manager(mean_3d,scales,rotations,shs,opacities,idx):
     elif idx <95:
         return infiniteinception_back(mean_3d,scales,rotations,shs,opacities,1)
     elif idx <118:
-        return infiniteinception_front(mean_3d,scales,rotations,shs,opacities,12)
+        return infiniteinception_front(mean_3d,scales,rotations,shs,opacities,15)
     elif idx <201:
-        return infiniteinception(mean_3d,scales,rotations,shs,opacities,12)
+        return infiniteinception(mean_3d,scales,rotations,shs,opacities,15)
     else:
-        return infiniteinception_front(mean_3d,scales,rotations,shs,opacities,12)
+        return infiniteinception_front(mean_3d,scales,rotations,shs,opacities,15)
 
 @jaxtyped(typechecker=typechecked)
 @torch.no_grad()
@@ -717,13 +717,33 @@ def infiniteinception_front(mean_3d,scales,rotations,shs,opacities,n) :
 
         double_i[:, 0] += d*(i+1)
         double_i[:, 1] -= d*(i+1)
-        for j in range(2*(i+1)+2):
+        for j in range(2*(i+1)+1):
             merged = torch.cat([merged, double_i], dim=0)
             scales_merged    = torch.cat([scales_merged, scales_i], dim=0)
             rotations_merged = torch.cat([rotations_merged, rotations_i], dim=0)
             shs_merged       = torch.cat([shs_merged, shs_i], dim=0)
             opacities_merged = torch.cat([opacities_merged, opacities_i], dim=0)
             double_i[:, 1] += d
+
+    for i in range(n):
+
+        mask = torch.rand(main.size(0)) < alpha**(-i)
+
+        double_i = main[mask]
+        scales_i = scales[mask]
+        rotations_i= rotations[mask]
+        shs_i = shs[mask]
+        opacities_i = opacities[mask]
+
+        double_i[:, 1] += d*(i+1)
+        double_i[:, 0] -= d*(i+1)
+        for j in range(2*(i)+2):
+            merged = torch.cat([merged, double_i], dim=0)
+            scales_merged    = torch.cat([scales_merged, scales_i], dim=0)
+            rotations_merged = torch.cat([rotations_merged, rotations_i], dim=0)
+            shs_merged       = torch.cat([shs_merged, shs_i], dim=0)
+            opacities_merged = torch.cat([opacities_merged, opacities_i], dim=0)
+            double_i[:, 0] += d
 
     return merged,scales_merged,rotations_merged,shs_merged,opacities_merged
 
