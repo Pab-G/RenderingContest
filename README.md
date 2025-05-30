@@ -17,7 +17,8 @@ Rendering-Contest
 ├── camera_input_images (Your Camera input files)
 ├── data
 │   ├── nubuzuki_only_v2
-│       └── transforms_test.json
+│   |   └── nubuzuki_only_v2.json
+|   └── nubuzuki_only_v2.ply 
 ├── rendering_outputs
 ├── src
 │   ├── camera.py
@@ -35,7 +36,7 @@ Rendering-Contest
 ```
 
 ## Preprocessing
-
+- If you only want to render the final output please go to section: Mirror Rendering 
 ### 1. Environment Setup
 ```bash 
 conda create -n nerfstudio_env -c conda-forge python=3.10 -y

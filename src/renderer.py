@@ -391,11 +391,11 @@ def idx_manager(mean_3d,scales,rotations,shs,opacities,idx):
     elif idx <95:
         return infiniteinception_back(mean_3d,scales,rotations,shs,opacities,1)
     elif idx <118:
-        return infiniteinception_front(mean_3d,scales,rotations,shs,opacities,15)
+        return infiniteinception_front(mean_3d,scales,rotations,shs,opacities,12)
     elif idx <201:
-        return infiniteinception(mean_3d,scales,rotations,shs,opacities,15)
+        return infiniteinception(mean_3d,scales,rotations,shs,opacities,12)
     else:
-        return infiniteinception_front(mean_3d,scales,rotations,shs,opacities,15)
+        return infiniteinception_front(mean_3d,scales,rotations,shs,opacities,12)
 
 @jaxtyped(typechecker=typechecked)
 @torch.no_grad()
