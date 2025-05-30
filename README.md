@@ -1,18 +1,15 @@
 <div align=center>
   <h1>
-    Mirror Rendering of Gaussian Splat
+    Splatfinity
   </h1>
   <p>
     <a href=https://mhsung.github.io/kaist-cs479-spring-2025/ target="_blank"><b>KAIST CS479: Machine Learning for 3D Data</b></a><br>
-    Group Project
+    3D Rendering Contest<br>
   </p>
 </div>
 
 <p align="center">
-  <video src="media/video_demo.mp4"
-         width="480"
-         autoplay loop muted playsinline
-         controls></video>
+  <img src="media/video_demo.gif" width="480" alt="demo animation">
 </p>
 
 ## Code Structure

@@ -22,3 +22,4 @@ outputs/
 mirror_rendering_outputs/
 rendering_outputs/
 export/
+.idea/
